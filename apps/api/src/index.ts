@@ -21,8 +21,14 @@ app.use("/api/products", productsRouter);
 
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
-  console.log(
-    `KUCHI'S API running on http://localhost:${env.PORT}`
-  );
-});
+// Vercel utiliza la instancia de Express directamente.
+export default app;
+
+// En desarrollo local sí levantamos el servidor manualmente.
+if (!process.env.VERCEL) {
+  app.listen(env.PORT, () => {
+    console.log(
+      `KUCHI'S API running on http://localhost:${env.PORT}`
+    );
+  });
+}
