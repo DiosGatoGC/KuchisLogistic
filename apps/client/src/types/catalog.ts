@@ -21,3 +21,20 @@ export interface ApiResponse<T> {
   count: number;
   data: T;
 }
+
+export interface SimulationAddition {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface SimulationAdditionalOption extends SimulationAddition {
+  is_available: boolean;
+}
+
+export interface SimulationItem {
+  lineId: string;
+  product: Product;
+  quantity: number;
+  additions: SimulationAddition[];
+}
