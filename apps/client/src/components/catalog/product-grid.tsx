@@ -8,10 +8,6 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ category, products, onAdd }: ProductGridProps) {
-  const availableCount = products.filter(
-    (product) => product.is_available,
-  ).length;
-
   return (
     <main id="productos" className="page-shell products-section">
       <div className="products-heading">
@@ -19,10 +15,6 @@ export function ProductGrid({ category, products, onAdd }: ProductGridProps) {
           <p className="eyebrow">Nuestra carta</p>
           <h2>{category.name}</h2>
         </div>
-        <span className="available-count">
-          <span aria-hidden="true" />
-          {availableCount} {availableCount === 1 ? "disponible" : "disponibles"}
-        </span>
       </div>
 
       {products.length > 0 ? (
