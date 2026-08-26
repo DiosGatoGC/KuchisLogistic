@@ -101,45 +101,120 @@ export type Database = {
         }
         Relationships: []
       }
-      order_items: {
+      order_item_additions: {
         Row: {
-          cancellation_reason: string | null
-          cancelled_by: string | null
+          addition_name: string
           created_at: string
           id: string
-          notes: string | null
-          order_id: string
+          order_item_id: string
           product_id: string
-          product_name: string
-          quantity: number
-          status: Database["public"]["Enums"]["order_item_status"]
+          quantity_per_item: number
           unit_price: number
         }
         Insert: {
-          cancellation_reason?: string | null
-          cancelled_by?: string | null
+          addition_name: string
           created_at?: string
           id?: string
-          notes?: string | null
-          order_id: string
+          order_item_id: string
           product_id: string
-          product_name: string
-          quantity: number
-          status?: Database["public"]["Enums"]["order_item_status"]
+          quantity_per_item?: number
           unit_price: number
         }
         Update: {
-          cancellation_reason?: string | null
-          cancelled_by?: string | null
+          addition_name?: string
           created_at?: string
           id?: string
+          order_item_id?: string
+          product_id?: string
+          quantity_per_item?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_additions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_additions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_from_status:
+            | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
+            | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          line_number: number
+          notes: string | null
+          order_id: string
+          preparation_station: Database["public"]["Enums"]["preparation_station"]
+          preparing_at: string | null
+          product_id: string
+          product_name: string
+          quantity: number
+          ready_at: string | null
+          status: Database["public"]["Enums"]["order_item_status"]
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_from_status?:
+            | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
+            | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          line_number: number
+          notes?: string | null
+          order_id: string
+          preparation_station: Database["public"]["Enums"]["preparation_station"]
+          preparing_at?: string | null
+          product_id: string
+          product_name: string
+          quantity: number
+          ready_at?: string | null
+          status?: Database["public"]["Enums"]["order_item_status"]
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_from_status?:
+            | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
+            | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          line_number?: number
           notes?: string | null
           order_id?: string
+          preparation_station?: Database["public"]["Enums"]["preparation_station"]
+          preparing_at?: string | null
           product_id?: string
           product_name?: string
           quantity?: number
+          ready_at?: string | null
           status?: Database["public"]["Enums"]["order_item_status"]
           unit_price?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -171,30 +246,27 @@ export type Database = {
           created_by: string
           id: string
           notes: string | null
-          ready_at: string | null
-          sent_at: string | null
+          sent_at: string
+          sequence_number: number
           service_session_id: string
-          status: Database["public"]["Enums"]["order_status"]
         }
         Insert: {
           created_at?: string
           created_by: string
           id?: string
           notes?: string | null
-          ready_at?: string | null
-          sent_at?: string | null
+          sent_at?: string
+          sequence_number: number
           service_session_id: string
-          status?: Database["public"]["Enums"]["order_status"]
         }
         Update: {
           created_at?: string
           created_by?: string
           id?: string
           notes?: string | null
-          ready_at?: string | null
-          sent_at?: string | null
+          sent_at?: string
+          sequence_number?: number
           service_session_id?: string
-          status?: Database["public"]["Enums"]["order_status"]
         }
         Relationships: [
           {
@@ -283,6 +355,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allows_additions: boolean
           category_id: string
           created_at: string
           description: string | null
@@ -291,10 +364,14 @@ export type Database = {
           is_active: boolean
           is_available: boolean
           name: string
+          preparation_station:
+            | Database["public"]["Enums"]["preparation_station"]
+            | null
           price: number
           updated_at: string
         }
         Insert: {
+          allows_additions?: boolean
           category_id: string
           created_at?: string
           description?: string | null
@@ -303,10 +380,14 @@ export type Database = {
           is_active?: boolean
           is_available?: boolean
           name: string
+          preparation_station?:
+            | Database["public"]["Enums"]["preparation_station"]
+            | null
           price: number
           updated_at?: string
         }
         Update: {
+          allows_additions?: boolean
           category_id?: string
           created_at?: string
           description?: string | null
@@ -315,6 +396,9 @@ export type Database = {
           is_active?: boolean
           is_available?: boolean
           name?: string
+          preparation_station?:
+            | Database["public"]["Enums"]["preparation_station"]
+            | null
           price?: number
           updated_at?: string
         }
@@ -330,25 +414,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auth_email: string
           created_at: string
           full_name: string
           id: string
           is_active: boolean
           role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          username: string
         }
         Insert: {
+          auth_email: string
           created_at?: string
           full_name: string
           id: string
           is_active?: boolean
           role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username: string
         }
         Update: {
+          auth_email?: string
           created_at?: string
           full_name?: string
           id?: string
           is_active?: boolean
           role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username?: string
         }
         Relationships: []
       }
@@ -563,13 +656,23 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      order_item_status: "ACTIVE" | "CANCELLED"
-      order_status: "PENDING" | "PREPARING" | "READY" | "CANCELLED"
+      order_item_cancellation_origin_status:
+        | "PENDING"
+        | "PREPARING"
+        | "READY"
+        | "DELIVERED"
+      order_item_status:
+        | "PENDING"
+        | "PREPARING"
+        | "READY"
+        | "DELIVERED"
+        | "CANCELLED"
       payment_method: "CASH" | "YAPE" | "CARD"
-      service_point_type: "TABLE" | "BAR"
+      preparation_station: "KITCHEN" | "DRINKS"
+      service_point_type: "TABLE" | "BAR" | "TAKEAWAY"
       session_status: "OPEN" | "AWAITING_PAYMENT" | "PAID" | "CANCELLED"
       shift_status: "OPEN" | "CLOSED"
-      user_role: "ADMIN" | "CASHIER" | "HALL" | "GRILL"
+      user_role: "ADMIN" | "MANAGER" | "WAITER" | "CASHIER" | "KITCHEN"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -700,13 +803,25 @@ export const Constants = {
   },
   public: {
     Enums: {
-      order_item_status: ["ACTIVE", "CANCELLED"],
-      order_status: ["PENDING", "PREPARING", "READY", "CANCELLED"],
+      order_item_cancellation_origin_status: [
+        "PENDING",
+        "PREPARING",
+        "READY",
+        "DELIVERED",
+      ],
+      order_item_status: [
+        "PENDING",
+        "PREPARING",
+        "READY",
+        "DELIVERED",
+        "CANCELLED",
+      ],
       payment_method: ["CASH", "YAPE", "CARD"],
-      service_point_type: ["TABLE", "BAR"],
+      preparation_station: ["KITCHEN", "DRINKS"],
+      service_point_type: ["TABLE", "BAR", "TAKEAWAY"],
       session_status: ["OPEN", "AWAITING_PAYMENT", "PAID", "CANCELLED"],
       shift_status: ["OPEN", "CLOSED"],
-      user_role: ["ADMIN", "CASHIER", "HALL", "GRILL"],
+      user_role: ["ADMIN", "MANAGER", "WAITER", "CASHIER", "KITCHEN"],
     },
   },
 } as const
