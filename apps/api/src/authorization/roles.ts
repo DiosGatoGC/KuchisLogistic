@@ -27,6 +27,8 @@ const cashierCapabilities = [
   "shift.open",
   "shift.close",
   "payments.charge",
+  "expenses.view",
+  "expenses.manage",
 ] as const satisfies readonly Capability[];
 
 const kitchenCapabilities = [

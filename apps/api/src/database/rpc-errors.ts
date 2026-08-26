@@ -12,6 +12,7 @@ const notFoundCodes = new Set([
   "ORDER_ITEM_NOT_FOUND",
   "ORDER_NOT_FOUND",
   "ADDITION_NOT_FOUND",
+  "SHIFT_EXPENSE_NOT_FOUND",
 ]);
 
 const invalidRequestCodes = new Set([
@@ -28,6 +29,13 @@ const invalidRequestCodes = new Set([
   "TRANSFER_INPUT_INVALID",
   "CANCELLATION_REASON_REQUIRED",
   "PRODUCT_AVAILABILITY_INPUT_INVALID",
+  "EXPENSE_CATEGORY_REQUIRED",
+  "EXPENSE_DESCRIPTION_INVALID",
+  "EXPENSE_AMOUNT_INVALID",
+  "EXPENSE_CUSTOM_CATEGORY_REQUIRED",
+  "EXPENSE_CUSTOM_CATEGORY_NOT_ALLOWED",
+  "EXPENSE_VOID_REASON_REQUIRED",
+  "PAYMENT_METHOD_REQUIRED",
 ]);
 
 const publicMessages: Record<string, string> = {
@@ -39,6 +47,16 @@ const publicMessages: Record<string, string> = {
   PRODUCT_ADDITIONS_NOT_ALLOWED: "El producto no admite adicionales.",
   ADDITION_NOT_FOUND: "El adicional no existe.",
   ADDITION_INVALID: "El producto seleccionado no es un adicional válido.",
+  SHIFT_EXPENSE_NOT_FOUND: "El gasto no existe.",
+  SHIFT_EXPENSE_ALREADY_VOIDED: "El gasto ya fue anulado.",
+  SHIFT_EXPENSE_CHANGED: "El gasto cambió mientras se procesaba la operación.",
+  EXPENSE_SHIFT_CLOSED: "No se puede anular un gasto de un turno cerrado.",
+  EXPENSE_CATEGORY_REQUIRED: "La categoría del gasto es obligatoria.",
+  EXPENSE_DESCRIPTION_INVALID: "La descripción del gasto no es válida.",
+  EXPENSE_AMOUNT_INVALID: "El monto del gasto no es válido.",
+  EXPENSE_CUSTOM_CATEGORY_REQUIRED: "La categoría personalizada es obligatoria para Otros.",
+  EXPENSE_CUSTOM_CATEGORY_NOT_ALLOWED: "La categoría personalizada sólo está permitida para Otros.",
+  EXPENSE_VOID_REASON_REQUIRED: "La razón de anulación es obligatoria.",
   SERVICE_POINT_NOT_FOUND: "El punto de servicio no existe.",
   SERVICE_POINT_INACTIVE: "El punto de servicio está inactivo.",
   SERVICE_POINT_OCCUPIED: "El punto de servicio de destino está ocupado.",
@@ -57,6 +75,13 @@ const publicMessages: Record<string, string> = {
   ORDER_ITEM_TRANSITION_NOT_ALLOWED: "El estado actual no permite esa transición.",
   TRANSFER_QUANTITY_EXCEEDS_AVAILABLE: "La cantidad supera la disponible.",
   CANCELLATION_REASON_REQUIRED: "La razón de cancelación es obligatoria.",
+  PAYMENT_METHOD_REQUIRED: "El método de pago es obligatorio.",
+  PAYMENT_ALREADY_EXISTS: "La sesión ya tiene un pago confirmado.",
+  SERVICE_SESSION_NOT_AWAITING_PAYMENT: "La sesión debe estar esperando pago.",
+  ORDER_ITEMS_NOT_DELIVERED: "Todos los ítems no cancelados deben estar entregados antes de cobrar.",
+  NOTHING_TO_PAY: "La sesión no tiene consumo cobrable.",
+  PAYMENT_AMOUNT_INVALID: "El monto calculado para el pago no es válido.",
+  SERVICE_SESSION_CHANGED: "La sesión cambió mientras se procesaba la operación.",
 };
 
 function domainCode(error: unknown): string | null {

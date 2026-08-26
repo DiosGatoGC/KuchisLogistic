@@ -13,6 +13,8 @@ export const ALL_CAPABILITIES = [
   "shift.open",
   "shift.close",
   "payments.charge",
+  "expenses.view",
+  "expenses.manage",
   "cash.reconcile",
   "history.view",
   "users.manage",
