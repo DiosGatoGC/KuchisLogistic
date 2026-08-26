@@ -556,7 +556,7 @@ export type Database = {
           {
             foreignKeyName: "payments_service_session_id_fkey"
             columns: ["service_session_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "service_sessions"
             referencedColumns: ["id"]
           },
@@ -1080,6 +1080,15 @@ export type Database = {
           p_actor_role: Database["public"]["Enums"]["user_role"]
           p_items: Json
           p_notes: string
+          p_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_pay_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_method: Database["public"]["Enums"]["payment_method"]
           p_service_session_id: string
         }
         Returns: Json
