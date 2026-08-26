@@ -1,0 +1,11 @@
+{
+  "name": "@kuchis/shared",
+  "version": "1.0.0",
+  "private": true,
+  "types": "database.types.ts",
+  "exports": {
+    "./database-types": {
+      "types": "./database.types.ts"
+    }
+  }
+}
