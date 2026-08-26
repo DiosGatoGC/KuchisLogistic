@@ -458,6 +458,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          created_by_role: Database["public"]["Enums"]["user_role"]
           id: string
           notes: string | null
           sent_at: string
@@ -467,6 +468,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          created_by_role: Database["public"]["Enums"]["user_role"]
           id?: string
           notes?: string | null
           sent_at?: string
@@ -476,6 +478,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          created_by_role?: Database["public"]["Enums"]["user_role"]
           id?: string
           notes?: string | null
           sent_at?: string
@@ -759,9 +762,11 @@ export type Database = {
           cancellation_reason: string | null
           closed_at: string | null
           closed_by: string | null
+          closed_by_role: Database["public"]["Enums"]["user_role"] | null
           id: string
           opened_at: string
           opened_by: string
+          opened_by_role: Database["public"]["Enums"]["user_role"]
           service_point_id: string
           shift_id: string
           status: Database["public"]["Enums"]["session_status"]
@@ -770,9 +775,11 @@ export type Database = {
           cancellation_reason?: string | null
           closed_at?: string | null
           closed_by?: string | null
+          closed_by_role?: Database["public"]["Enums"]["user_role"] | null
           id?: string
           opened_at?: string
           opened_by: string
+          opened_by_role: Database["public"]["Enums"]["user_role"]
           service_point_id: string
           shift_id: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -781,9 +788,11 @@ export type Database = {
           cancellation_reason?: string | null
           closed_at?: string | null
           closed_by?: string | null
+          closed_by_role?: Database["public"]["Enums"]["user_role"] | null
           id?: string
           opened_at?: string
           opened_by?: string
+          opened_by_role?: Database["public"]["Enums"]["user_role"]
           service_point_id?: string
           shift_id?: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -840,6 +849,7 @@ export type Database = {
           order_item_transfers_count: number
           order_items_count: number
           orders_count: number
+          product_units_count: number
           report_path: string | null
           service_session_transfers_count: number
           service_sessions_count: number
@@ -867,6 +877,7 @@ export type Database = {
           order_item_transfers_count?: number
           order_items_count?: number
           orders_count?: number
+          product_units_count?: number
           report_path?: string | null
           service_session_transfers_count?: number
           service_sessions_count?: number
@@ -894,6 +905,7 @@ export type Database = {
           order_item_transfers_count?: number
           order_items_count?: number
           orders_count?: number
+          product_units_count?: number
           report_path?: string | null
           service_session_transfers_count?: number
           service_sessions_count?: number
