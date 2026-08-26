@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -986,7 +986,64 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      logistics_cancel_order_item: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      logistics_create_order: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_items: Json
+          p_notes: string
+          p_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_set_product_availability: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_is_available: boolean
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      logistics_transfer_order_item: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+          p_quantity: number
+          p_reason: string
+          p_to_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_transfer_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_reason: string
+          p_service_session_id: string
+          p_to_service_point_id: string
+        }
+        Returns: Json
+      }
+      logistics_transition_order_item: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       order_item_cancellation_origin_status:

@@ -603,10 +603,15 @@ to service_role;
 -- through PostgreSQL's PUBLIC pseudo-role.
 -- ============================================================================
 
-revoke execute
-on function public.rls_auto_enable()
-from public, anon, authenticated;
-
+do $$
+begin
+  if pg_catalog.to_regprocedure('public.rls_auto_enable()') is not null then
+    execute
+      'revoke execute on function public.rls_auto_enable()
+       from public, anon, authenticated';
+  end if;
+end
+$$;
 
 -- ============================================================================
 -- END — KUCHI'S LOGÍSTICO V1 / MIGRATION 3
