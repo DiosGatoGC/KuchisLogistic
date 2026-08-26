@@ -2,9 +2,11 @@ import type { RequestHandler } from "express";
 import type { z } from "zod";
 import { AppError } from "../errors/app-error";
 
-export function validateBody(schema: z.ZodType): RequestHandler {
+type ValidationSource = "body" | "params" | "query";
+
+function validate(schema: z.ZodType, source: ValidationSource): RequestHandler {
   return (req, _res, next) => {
-    const result = schema.safeParse(req.body);
+    const result = schema.safeParse(req[source]);
 
     if (!result.success) {
       next(
@@ -18,7 +20,21 @@ export function validateBody(schema: z.ZodType): RequestHandler {
       return;
     }
 
-    req.validatedBody = result.data;
+    if (source === "body") req.validatedBody = result.data;
+    if (source === "params") req.validatedParams = result.data;
+    if (source === "query") req.validatedQuery = result.data;
     next();
   };
+}
+
+export function validateBody(schema: z.ZodType): RequestHandler {
+  return validate(schema, "body");
+}
+
+export function validateParams(schema: z.ZodType): RequestHandler {
+  return validate(schema, "params");
+}
+
+export function validateQuery(schema: z.ZodType): RequestHandler {
+  return validate(schema, "query");
 }
