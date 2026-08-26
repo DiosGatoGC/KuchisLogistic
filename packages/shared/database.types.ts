@@ -100,6 +100,90 @@ export type Database = {
           },
         ]
       }
+      cash_reconciliations: {
+        Row: {
+          card_difference: number | null
+          cash_difference: number | null
+          cash_sales_expected: number
+          confirmed_card_customer_total: number
+          confirmed_yape: number
+          counted_cash: number
+          created_at: string
+          expected_card_business: number
+          expected_card_customer_total: number | null
+          expected_card_fee: number
+          expected_cash: number | null
+          expected_yape: number
+          id: string
+          notes: string | null
+          opening_cash_snapshot: number
+          reconciled_by: string
+          reconciled_by_role: Database["public"]["Enums"]["user_role"]
+          shift_id: string
+          updated_at: string
+          yape_difference: number | null
+        }
+        Insert: {
+          card_difference?: number | null
+          cash_difference?: number | null
+          cash_sales_expected?: number
+          confirmed_card_customer_total: number
+          confirmed_yape: number
+          counted_cash: number
+          created_at?: string
+          expected_card_business?: number
+          expected_card_customer_total?: number | null
+          expected_card_fee?: number
+          expected_cash?: number | null
+          expected_yape?: number
+          id?: string
+          notes?: string | null
+          opening_cash_snapshot?: number
+          reconciled_by: string
+          reconciled_by_role: Database["public"]["Enums"]["user_role"]
+          shift_id: string
+          updated_at?: string
+          yape_difference?: number | null
+        }
+        Update: {
+          card_difference?: number | null
+          cash_difference?: number | null
+          cash_sales_expected?: number
+          confirmed_card_customer_total?: number
+          confirmed_yape?: number
+          counted_cash?: number
+          created_at?: string
+          expected_card_business?: number
+          expected_card_customer_total?: number | null
+          expected_card_fee?: number
+          expected_cash?: number | null
+          expected_yape?: number
+          id?: string
+          notes?: string | null
+          opening_cash_snapshot?: number
+          reconciled_by?: string
+          reconciled_by_role?: Database["public"]["Enums"]["user_role"]
+          shift_id?: string
+          updated_at?: string
+          yape_difference?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_reconciliations_reconciled_by_fkey"
+            columns: ["reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_reconciliations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: true
+            referencedRelation: "shift_closures"
+            referencedColumns: ["shift_id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           id: string
@@ -425,6 +509,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           paid_at: string
           received_by: string
+          received_by_role: Database["public"]["Enums"]["user_role"]
           service_session_id: string
           shift_id: string
         }
@@ -437,6 +522,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           paid_at?: string
           received_by: string
+          received_by_role: Database["public"]["Enums"]["user_role"]
           service_session_id: string
           shift_id: string
         }
@@ -449,6 +535,7 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           paid_at?: string
           received_by?: string
+          received_by_role?: Database["public"]["Enums"]["user_role"]
           service_session_id?: string
           shift_id?: string
         }
@@ -735,16 +822,26 @@ export type Database = {
       shift_closures: {
         Row: {
           business_sales_total: number
+          cancelled_delivered_count: number
+          cancelled_order_items_count: number
+          cancelled_pending_count: number
+          cancelled_preparing_count: number
+          cancelled_ready_count: number
           cancelled_sessions_count: number
           card_fee_total: number
           card_total: number
           cash_total: number
           closed_by: string
+          closed_by_role: Database["public"]["Enums"]["user_role"]
+          closing_notes: string | null
           created_at: string
           customer_card_total: number
           id: string
+          order_item_transfers_count: number
+          order_items_count: number
           orders_count: number
           report_path: string | null
+          service_session_transfers_count: number
           service_sessions_count: number
           shift_id: string
           summary: Json
@@ -752,16 +849,26 @@ export type Database = {
         }
         Insert: {
           business_sales_total: number
+          cancelled_delivered_count?: number
+          cancelled_order_items_count?: number
+          cancelled_pending_count?: number
+          cancelled_preparing_count?: number
+          cancelled_ready_count?: number
           cancelled_sessions_count?: number
           card_fee_total?: number
           card_total?: number
           cash_total?: number
           closed_by: string
+          closed_by_role: Database["public"]["Enums"]["user_role"]
+          closing_notes?: string | null
           created_at?: string
           customer_card_total?: number
           id?: string
+          order_item_transfers_count?: number
+          order_items_count?: number
           orders_count?: number
           report_path?: string | null
+          service_session_transfers_count?: number
           service_sessions_count?: number
           shift_id: string
           summary?: Json
@@ -769,16 +876,26 @@ export type Database = {
         }
         Update: {
           business_sales_total?: number
+          cancelled_delivered_count?: number
+          cancelled_order_items_count?: number
+          cancelled_pending_count?: number
+          cancelled_preparing_count?: number
+          cancelled_ready_count?: number
           cancelled_sessions_count?: number
           card_fee_total?: number
           card_total?: number
           cash_total?: number
           closed_by?: string
+          closed_by_role?: Database["public"]["Enums"]["user_role"]
+          closing_notes?: string | null
           created_at?: string
           customer_card_total?: number
           id?: string
+          order_item_transfers_count?: number
+          order_items_count?: number
           orders_count?: number
           report_path?: string | null
+          service_session_transfers_count?: number
           service_sessions_count?: number
           shift_id?: string
           summary?: Json
@@ -805,27 +922,33 @@ export type Database = {
         Row: {
           closed_at: string | null
           closed_by: string | null
+          closed_by_role: Database["public"]["Enums"]["user_role"] | null
           id: string
           opened_at: string
           opened_by: string
+          opened_by_role: Database["public"]["Enums"]["user_role"]
           opening_cash: number
           status: Database["public"]["Enums"]["shift_status"]
         }
         Insert: {
           closed_at?: string | null
           closed_by?: string | null
+          closed_by_role?: Database["public"]["Enums"]["user_role"] | null
           id?: string
           opened_at?: string
           opened_by: string
+          opened_by_role: Database["public"]["Enums"]["user_role"]
           opening_cash?: number
           status?: Database["public"]["Enums"]["shift_status"]
         }
         Update: {
           closed_at?: string | null
           closed_by?: string | null
+          closed_by_role?: Database["public"]["Enums"]["user_role"] | null
           id?: string
           opened_at?: string
           opened_by?: string
+          opened_by_role?: Database["public"]["Enums"]["user_role"]
           opening_cash?: number
           status?: Database["public"]["Enums"]["shift_status"]
         }
