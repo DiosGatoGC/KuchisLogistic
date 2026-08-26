@@ -42,32 +42,55 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          actor_role: Database["public"]["Enums"]["user_role"] | null
           created_at: string
           details: Json
           entity: string
           entity_id: string | null
           id: string
+          service_session_id: string | null
+          shift_id: string | null
           user_id: string | null
         }
         Insert: {
           action: string
+          actor_role?: Database["public"]["Enums"]["user_role"] | null
           created_at?: string
           details?: Json
           entity: string
           entity_id?: string | null
           id?: string
+          service_session_id?: string | null
+          shift_id?: string | null
           user_id?: string | null
         }
         Update: {
           action?: string
+          actor_role?: Database["public"]["Enums"]["user_role"] | null
           created_at?: string
           details?: Json
           entity?: string
           entity_id?: string | null
           id?: string
+          service_session_id?: string | null
+          shift_id?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "audit_logs_service_session_id_fkey"
+            columns: ["service_session_id"]
+            isOneToOne: false
+            referencedRelation: "service_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
@@ -146,15 +169,111 @@ export type Database = {
           },
         ]
       }
+      order_item_transfers: {
+        Row: {
+          from_service_point_id: string
+          from_service_point_name: string
+          from_service_session_id: string
+          id: string
+          order_item_id: string
+          quantity: number
+          reason: string | null
+          status_at_transfer: Database["public"]["Enums"]["order_item_status"]
+          to_service_point_id: string
+          to_service_point_name: string
+          to_service_session_id: string
+          transferred_at: string
+          transferred_by: string
+          transferred_by_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          from_service_point_id: string
+          from_service_point_name: string
+          from_service_session_id: string
+          id?: string
+          order_item_id: string
+          quantity: number
+          reason?: string | null
+          status_at_transfer: Database["public"]["Enums"]["order_item_status"]
+          to_service_point_id: string
+          to_service_point_name: string
+          to_service_session_id: string
+          transferred_at?: string
+          transferred_by: string
+          transferred_by_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          from_service_point_id?: string
+          from_service_point_name?: string
+          from_service_session_id?: string
+          id?: string
+          order_item_id?: string
+          quantity?: number
+          reason?: string | null
+          status_at_transfer?: Database["public"]["Enums"]["order_item_status"]
+          to_service_point_id?: string
+          to_service_point_name?: string
+          to_service_session_id?: string
+          transferred_at?: string
+          transferred_by?: string
+          transferred_by_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_transfers_from_service_point_id_fkey"
+            columns: ["from_service_point_id"]
+            isOneToOne: false
+            referencedRelation: "service_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_transfers_from_service_session_id_fkey"
+            columns: ["from_service_session_id"]
+            isOneToOne: false
+            referencedRelation: "service_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_transfers_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_transfers_to_service_point_id_fkey"
+            columns: ["to_service_point_id"]
+            isOneToOne: false
+            referencedRelation: "service_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_transfers_to_service_session_id_fkey"
+            columns: ["to_service_session_id"]
+            isOneToOne: false
+            referencedRelation: "service_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_transfers_transferred_by_fkey"
+            columns: ["transferred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          cancelled_by_role: Database["public"]["Enums"]["user_role"] | null
           cancelled_from_status:
             | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
             | null
           created_at: string
+          current_service_session_id: string
           delivered_at: string | null
           id: string
           line_number: number
@@ -174,10 +293,12 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          cancelled_by_role?: Database["public"]["Enums"]["user_role"] | null
           cancelled_from_status?:
             | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
             | null
           created_at?: string
+          current_service_session_id: string
           delivered_at?: string | null
           id?: string
           line_number: number
@@ -197,10 +318,12 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          cancelled_by_role?: Database["public"]["Enums"]["user_role"] | null
           cancelled_from_status?:
             | Database["public"]["Enums"]["order_item_cancellation_origin_status"]
             | null
           created_at?: string
+          current_service_session_id?: string
           delivered_at?: string | null
           id?: string
           line_number?: number
@@ -222,6 +345,13 @@ export type Database = {
             columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_current_service_session_id_fkey"
+            columns: ["current_service_session_id"]
+            isOneToOne: false
+            referencedRelation: "service_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -468,6 +598,74 @@ export type Database = {
           type?: Database["public"]["Enums"]["service_point_type"]
         }
         Relationships: []
+      }
+      service_session_transfers: {
+        Row: {
+          from_service_point_id: string
+          from_service_point_name: string
+          id: string
+          reason: string | null
+          service_session_id: string
+          to_service_point_id: string
+          to_service_point_name: string
+          transferred_at: string
+          transferred_by: string
+          transferred_by_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          from_service_point_id: string
+          from_service_point_name: string
+          id?: string
+          reason?: string | null
+          service_session_id: string
+          to_service_point_id: string
+          to_service_point_name: string
+          transferred_at?: string
+          transferred_by: string
+          transferred_by_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          from_service_point_id?: string
+          from_service_point_name?: string
+          id?: string
+          reason?: string | null
+          service_session_id?: string
+          to_service_point_id?: string
+          to_service_point_name?: string
+          transferred_at?: string
+          transferred_by?: string
+          transferred_by_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_session_transfers_from_service_point_id_fkey"
+            columns: ["from_service_point_id"]
+            isOneToOne: false
+            referencedRelation: "service_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_session_transfers_service_session_id_fkey"
+            columns: ["service_session_id"]
+            isOneToOne: false
+            referencedRelation: "service_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_session_transfers_to_service_point_id_fkey"
+            columns: ["to_service_point_id"]
+            isOneToOne: false
+            referencedRelation: "service_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_session_transfers_transferred_by_fkey"
+            columns: ["transferred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_sessions: {
         Row: {
