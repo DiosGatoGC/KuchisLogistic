@@ -4,6 +4,7 @@ import { sendSuccess } from "../../http/responses";
 import type {
   ServicePointIdParams,
   ServiceSessionIdParams,
+  ReleaseServiceSessionInput,
 } from "./service-points.schemas";
 import { servicePointsService } from "./service-points.service";
 
@@ -66,3 +67,16 @@ export const awaitSessionPayment = transitionSession((id) =>
 export const reopenSession = transitionSession((id) =>
   servicePointsService.reopen(id)
 );
+
+export const releaseServiceSession: RequestHandler = async (req, res, next) => {
+  try {
+    if (!req.authUser) throw unauthorized();
+    const { id } = req.validatedParams as ServiceSessionIdParams;
+    const { reason } = req.validatedBody as ReleaseServiceSessionInput;
+    sendSuccess(res, {
+      session: await servicePointsService.release(id, reason, req.authUser),
+    });
+  } catch (error) {
+    next(error);
+  }
+};

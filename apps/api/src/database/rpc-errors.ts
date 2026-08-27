@@ -13,6 +13,9 @@ const notFoundCodes = new Set([
   "ORDER_NOT_FOUND",
   "ADDITION_NOT_FOUND",
   "SHIFT_EXPENSE_NOT_FOUND",
+  "SHIFT_NOT_FOUND",
+  "SHIFT_CLOSURE_NOT_FOUND",
+  "CASH_RECONCILIATION_NOT_FOUND",
 ]);
 
 const invalidRequestCodes = new Set([
@@ -36,6 +39,10 @@ const invalidRequestCodes = new Set([
   "EXPENSE_CUSTOM_CATEGORY_NOT_ALLOWED",
   "EXPENSE_VOID_REASON_REQUIRED",
   "PAYMENT_METHOD_REQUIRED",
+  "SERVICE_SESSION_RELEASE_REASON_REQUIRED",
+  "CLOSING_NOTES_INVALID",
+  "RECONCILIATION_INPUT_INVALID",
+  "RECONCILIATION_NOTES_INVALID",
 ]);
 
 const publicMessages: Record<string, string> = {
@@ -82,6 +89,27 @@ const publicMessages: Record<string, string> = {
   NOTHING_TO_PAY: "La sesión no tiene consumo cobrable.",
   PAYMENT_AMOUNT_INVALID: "El monto calculado para el pago no es válido.",
   SERVICE_SESSION_CHANGED: "La sesión cambió mientras se procesaba la operación.",
+  SERVICE_SESSION_RELEASE_REASON_REQUIRED: "La razón para liberar la sesión es obligatoria.",
+  SERVICE_SESSION_HAS_BILLABLE_ITEMS: "La sesión todavía tiene consumo cobrable.",
+  SERVICE_SESSION_HAS_UNCANCELLED_ITEMS: "La sesión todavía tiene ítems sin cancelar.",
+  SHIFT_NOT_FOUND: "El turno no existe.",
+  SHIFT_ALREADY_CLOSED: "El turno ya está cerrado.",
+  SHIFT_CLOSURE_ALREADY_EXISTS: "El turno ya tiene un cierre registrado.",
+  CLOSING_NOTES_INVALID: "Las notas de cierre no son válidas.",
+  SHIFT_HAS_ACTIVE_SESSIONS: "El turno todavía tiene sesiones activas.",
+  SHIFT_HAS_UNRESOLVED_ITEMS: "El turno todavía tiene ítems sin resolver.",
+  SHIFT_PAYMENT_INCONSISTENT: "Los pagos del turno no son consistentes.",
+  SHIFT_CANCELLED_SESSION_HAS_CONSUMPTION: "Una sesión cancelada conserva consumo activo.",
+  SHIFT_EXPECTED_CASH_NEGATIVE: "El efectivo esperado del turno no puede ser negativo.",
+  SHIFT_CLOSURE_AMOUNT_INVALID: "Los montos del cierre exceden el rango permitido.",
+  SHIFT_CLOSURE_COUNT_INVALID: "Las métricas del cierre exceden el rango permitido.",
+  SHIFT_CHANGED: "El turno cambió mientras se procesaba el cierre.",
+  SHIFT_NOT_CLOSED: "El turno todavía no está cerrado.",
+  SHIFT_CLOSURE_NOT_FOUND: "El cierre del turno no existe.",
+  CASH_RECONCILIATION_ALREADY_EXISTS: "El turno ya tiene un cuadre registrado.",
+  CASH_RECONCILIATION_NOT_FOUND: "El cuadre del turno no existe.",
+  RECONCILIATION_INPUT_INVALID: "Los montos del cuadre no son válidos.",
+  RECONCILIATION_NOTES_INVALID: "Las notas del cuadre no son válidas.",
 };
 
 function domainCode(error: unknown): string | null {

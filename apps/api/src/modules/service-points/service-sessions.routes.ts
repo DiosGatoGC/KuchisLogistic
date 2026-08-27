@@ -1,13 +1,20 @@
 import { Router } from "express";
 import { requireCapability } from "../../authorization/require-capability.middleware";
-import { validateParams } from "../../middlewares/validation.middleware";
+import {
+  validateBody,
+  validateParams,
+} from "../../middlewares/validation.middleware";
 import { requireAuth } from "../auth/auth.middleware";
 import {
   awaitSessionPayment,
   getServiceSession,
+  releaseServiceSession,
   reopenSession,
 } from "./service-points.controller";
-import { serviceSessionIdParamsSchema } from "./service-points.schemas";
+import {
+  releaseServiceSessionSchema,
+  serviceSessionIdParamsSchema,
+} from "./service-points.schemas";
 
 const router = Router();
 
@@ -29,6 +36,13 @@ router.post(
   requireCapability("tables.operate"),
   validateParams(serviceSessionIdParamsSchema),
   reopenSession
+);
+router.post(
+  "/:id/release",
+  requireCapability("tables.release"),
+  validateParams(serviceSessionIdParamsSchema),
+  validateBody(releaseServiceSessionSchema),
+  releaseServiceSession
 );
 
 export default router;

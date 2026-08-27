@@ -5,8 +5,21 @@ import {
   validateParams,
 } from "../../middlewares/validation.middleware";
 import { requireAuth } from "../auth/auth.middleware";
-import { getCurrentShift, getShift, openShift } from "./shifts.controller";
-import { openShiftSchema, shiftIdParamsSchema } from "./shifts.schemas";
+import {
+  closeShift,
+  getCurrentShift,
+  getShift,
+  getShiftClosure,
+  getShiftReconciliation,
+  openShift,
+  reconcileShift,
+} from "./shifts.controller";
+import {
+  closeShiftSchema,
+  openShiftSchema,
+  reconcileShiftSchema,
+  shiftIdParamsSchema,
+} from "./shifts.schemas";
 
 const router = Router();
 
@@ -17,6 +30,32 @@ router.post(
   requireCapability("shift.open"),
   validateBody(openShiftSchema),
   openShift
+);
+router.post(
+  "/:id/close",
+  requireCapability("shift.close"),
+  validateParams(shiftIdParamsSchema),
+  validateBody(closeShiftSchema),
+  closeShift
+);
+router.get(
+  "/:id/closure",
+  requireCapability("shift.close"),
+  validateParams(shiftIdParamsSchema),
+  getShiftClosure
+);
+router.post(
+  "/:id/reconciliation",
+  requireCapability("cash.reconcile"),
+  validateParams(shiftIdParamsSchema),
+  validateBody(reconcileShiftSchema),
+  reconcileShift
+);
+router.get(
+  "/:id/reconciliation",
+  requireCapability("cash.reconcile"),
+  validateParams(shiftIdParamsSchema),
+  getShiftReconciliation
 );
 router.get(
   "/:id",

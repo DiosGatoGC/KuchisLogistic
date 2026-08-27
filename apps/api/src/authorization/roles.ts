@@ -21,6 +21,7 @@ const cashierCapabilities = [
   "orders.create",
   "orders.transfer",
   "orders.cancel",
+  "tables.release",
   "orders.kitchen.view",
   "orders.drinks.view",
   "catalog.availability",

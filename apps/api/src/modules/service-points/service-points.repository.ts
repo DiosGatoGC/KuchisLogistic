@@ -1,7 +1,9 @@
-import type { Database } from "@kuchis/shared/database-types";
+import type { Database, Json } from "@kuchis/shared/database-types";
 import { supabaseAdmin } from "../../config/supabase";
 import { isUniqueViolation } from "../../database/postgres-errors";
+import { mapRpcError } from "../../database/rpc-errors";
 import { AppError } from "../../errors/app-error";
+import type { AuthenticatedUser } from "../auth/auth.types";
 
 export type ServicePoint =
   Database["public"]["Tables"]["service_points"]["Row"];
@@ -26,6 +28,10 @@ export interface ServiceSessionsRepository {
     from: SessionStatus,
     to: SessionStatus
   ): Promise<ServiceSession | null>;
+}
+
+export interface ServiceSessionReleaseRepository {
+  release(id: string, reason: string, actor: AuthenticatedUser): Promise<Json>;
 }
 
 const pointColumns = "id, name, type, sort_order, is_active";
@@ -76,7 +82,8 @@ export const servicePointsRepository: ServicePointsRepository = {
   },
 };
 
-export const serviceSessionsRepository: ServiceSessionsRepository = {
+export const serviceSessionsRepository: ServiceSessionsRepository &
+  ServiceSessionReleaseRepository = {
   async listActive() {
     const { data, error } = await supabaseAdmin
       .from("service_sessions")
@@ -134,6 +141,20 @@ export const serviceSessionsRepository: ServiceSessionsRepository = {
       .maybeSingle();
 
     if (error) throw persistenceError(error);
+    return data;
+  },
+
+  async release(id, reason, actor) {
+    const { data, error } = await supabaseAdmin.rpc(
+      "logistics_release_empty_service_session",
+      {
+        p_actor_id: actor.id,
+        p_actor_role: actor.role,
+        p_reason: reason,
+        p_service_session_id: id,
+      }
+    );
+    if (error) throw mapRpcError(error, "SERVICE_SESSION_RELEASE_FAILED");
     return data;
   },
 };

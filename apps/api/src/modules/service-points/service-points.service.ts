@@ -1,4 +1,5 @@
 import { AppError } from "../../errors/app-error";
+import { z } from "zod";
 import type { AuthenticatedUser } from "../auth/auth.types";
 import {
   profilesRepository,
@@ -16,12 +17,26 @@ import {
   type ServicePointsRepository,
   type ServiceSession,
   type ServiceSessionsRepository,
+  type ServiceSessionReleaseRepository,
 } from "./service-points.repository";
 import type {
   PublicServicePoint,
   PublicServiceSession,
   ServicePointStatus,
 } from "./service-points.types";
+
+const releaseResponseSchema = z
+  .object({
+    serviceSessionId: z.uuid(),
+    shiftId: z.uuid(),
+    sessionStatus: z.literal("CANCELLED"),
+    reason: z.string().min(1),
+    businessAmount: z.literal(0),
+    releasedAt: z.string().min(1),
+    releasedBy: z.uuid(),
+    releasedByRole: z.enum(["ADMIN", "MANAGER", "WAITER", "CASHIER", "KITCHEN"]),
+  })
+  .strict();
 
 function toPublicPoint(point: ServicePoint): PublicServicePoint {
   return {
@@ -77,7 +92,9 @@ export class ServicePointsService {
     private readonly points: ServicePointsRepository,
     private readonly sessions: ServiceSessionsRepository,
     private readonly shifts: ShiftsRepository,
-    private readonly profiles: ProfilesRepository
+    private readonly profiles: ProfilesRepository,
+    private readonly releaseRepository: ServiceSessionReleaseRepository =
+      serviceSessionsRepository
   ) {}
 
   async list() {
@@ -176,6 +193,26 @@ export class ServicePointsService {
 
   async reopen(id: string) {
     return this.transition(id, "AWAITING_PAYMENT", "OPEN");
+  }
+
+  async release(id: string, reason: string, actor: AuthenticatedUser) {
+    const parsed = releaseResponseSchema.safeParse(
+      await this.releaseRepository.release(id, reason, actor)
+    );
+    if (
+      !parsed.success ||
+      parsed.data.serviceSessionId !== id ||
+      parsed.data.reason !== reason ||
+      parsed.data.releasedBy !== actor.id ||
+      parsed.data.releasedByRole !== actor.role
+    ) {
+      throw new AppError(
+        500,
+        "SERVICE_SESSION_RELEASE_RESPONSE_INVALID",
+        "La liberación de la sesión terminó con una respuesta inválida."
+      );
+    }
+    return parsed.data;
   }
 
   private async transition(
