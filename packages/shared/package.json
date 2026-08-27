@@ -6,6 +6,10 @@
   "exports": {
     "./database-types": {
       "types": "./database.types.ts"
+    },
+    "./logistics-realtime": {
+      "types": "./logistics-realtime.ts",
+      "default": "./logistics-realtime.ts"
     }
   }
 }
