@@ -1074,6 +1074,15 @@ export type Database = {
         }
         Returns: Json
       }
+      logistics_close_shift: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_closing_notes: string
+          p_shift_id: string
+        }
+        Returns: Json
+      }
       logistics_create_order: {
         Args: {
           p_actor_id: string
@@ -1093,6 +1102,18 @@ export type Database = {
         }
         Returns: Json
       }
+      logistics_reconcile_shift: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_confirmed_card_customer_total: number
+          p_confirmed_yape: number
+          p_counted_cash: number
+          p_notes: string
+          p_shift_id: string
+        }
+        Returns: Json
+      }
       logistics_record_shift_expense: {
         Args: {
           p_actor_id: string
@@ -1101,6 +1122,15 @@ export type Database = {
           p_category: Database["public"]["Enums"]["expense_category"]
           p_custom_category: string
           p_description: string
+        }
+        Returns: Json
+      }
+      logistics_release_empty_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_reason: string
+          p_service_session_id: string
         }
         Returns: Json
       }
