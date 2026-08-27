@@ -8,7 +8,9 @@
     "compile": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/tests/*.test.ts"
+    "test": "node --test --import tsx src/tests/*.test.ts",
+    "test:integration:local": "tsx src/tests/integration/run-local.ts e2e",
+    "test:e2e:local": "tsx src/tests/integration/run-local.ts e2e"
   },
   "keywords": [],
   "author": "",
