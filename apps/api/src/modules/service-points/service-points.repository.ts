@@ -126,6 +126,9 @@ export const serviceSessionsRepository: ServiceSessionsRepository &
 
     if (error) {
       if (isUniqueViolation(error)) throw occupiedError(error);
+      if (error.code === "P0001") {
+        throw mapRpcError(error, "SERVICE_POINT_OPEN_FAILED");
+      }
       throw persistenceError(error);
     }
     return data;

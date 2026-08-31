@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --import tsx src/tests/*.test.ts",
     "test:integration:local": "tsx src/tests/integration/run-local.ts e2e",
-    "test:e2e:local": "tsx src/tests/integration/run-local.ts e2e"
+    "test:e2e:local": "tsx src/tests/integration/run-local.ts e2e",
+    "test:concurrency:local": "tsx src/tests/integration/run-local.ts concurrency"
   },
   "keywords": [],
   "author": "",

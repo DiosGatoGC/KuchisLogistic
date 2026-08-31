@@ -16,6 +16,7 @@ const supabaseCli = resolve(projectRoot, "node_modules/.bin/supabase");
 
 const suites = {
   e2e: resolve(__dirname, "e2e.test.ts"),
+  concurrency: resolve(__dirname, "concurrency.test.ts"),
 } as const;
 
 type SuiteName = keyof typeof suites;
