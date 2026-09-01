@@ -521,10 +521,15 @@ describe("objective 11 RPC error mapping", () => {
       ["CASH_RECONCILIATION_ALREADY_EXISTS", 409],
     ];
     for (const [code, status] of cases) {
-      const error = mapRpcError({ code: "P0001", message: `${code}: raw SQL secret` }, "FAILED");
+      const error = mapRpcError({ code: "P0001", message: code }, "FAILED");
       assert.equal(error.code, code);
       assert.equal(error.statusCode, status);
       assert.equal(error.message.includes("raw SQL"), false);
+
+      const decorated = mapRpcError({ code: "P0001", message: `${code}: raw SQL secret` }, "FAILED");
+      assert.equal(decorated.code, "FAILED");
+      assert.equal(decorated.statusCode, 500);
+      assert.equal(decorated.message.includes("raw SQL"), false);
     }
   });
 });

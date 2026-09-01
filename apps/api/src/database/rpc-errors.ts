@@ -115,18 +115,20 @@ const publicMessages: Record<string, string> = {
   RECONCILIATION_NOTES_INVALID: "Las notas del cuadre no son válidas.",
 };
 
+const knownDomainCodes = new Set(Object.keys(publicMessages));
+
 function domainCode(error: unknown): string | null {
   if (!error || typeof error !== "object") return null;
   const value = error as RpcErrorLike;
   if (value.code !== "P0001" || typeof value.message !== "string") return null;
-  const match = value.message.match(/[A-Z][A-Z_]+/);
-  return match?.[0] ?? null;
+  const message = value.message.trim();
+  return /^[A-Z][A-Z_]+$/.test(message) ? message : null;
 }
 
 export function mapRpcError(error: unknown, operationCode: string): AppError {
   const code = domainCode(error);
 
-  if (!code) {
+  if (!code || !knownDomainCodes.has(code)) {
     return new AppError(
       500,
       operationCode,

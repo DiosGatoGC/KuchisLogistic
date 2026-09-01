@@ -1,28 +1,34 @@
 import type { CorsOptions } from "cors";
 import { AppError } from "../errors/app-error";
-import { env } from "./env";
+import type { ApiEnv } from "./env";
 
-export const corsOptions: CorsOptions = {
-  origin(origin, callback) {
-    const isAllowed =
-      !origin ||
-      env.CORS_ALLOWED_ORIGINS === "*" ||
-      env.CORS_ALLOWED_ORIGINS.includes(origin);
+export const CORS_METHODS = ["GET", "HEAD", "POST", "PATCH", "OPTIONS"] as const;
 
-    if (isAllowed) {
-      callback(null, true);
-      return;
-    }
+export function createCorsOptions(config: ApiEnv): CorsOptions {
+  return {
+    origin(origin, callback) {
+      const isAllowed =
+        !origin
+        || config.CORS_ALLOWED_ORIGINS === "*"
+        || config.CORS_ALLOWED_ORIGINS.includes(origin);
 
-    callback(
-      new AppError(
-        403,
-        "CORS_ORIGIN_FORBIDDEN",
-        "El origen de la solicitud no está permitido."
-      )
-    );
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Authorization", "Content-Type"],
-  maxAge: 86_400,
-};
+      if (isAllowed) {
+        callback(null, true);
+        return;
+      }
+
+      callback(
+        new AppError(
+          403,
+          "CORS_ORIGIN_FORBIDDEN",
+          "El origen de la solicitud no está permitido."
+        )
+      );
+    },
+    methods: [...CORS_METHODS],
+    allowedHeaders: ["Authorization", "Content-Type"],
+    exposedHeaders: ["X-Request-ID", "RateLimit", "RateLimit-Policy", "Retry-After"],
+    credentials: false,
+    maxAge: 86_400,
+  };
+}

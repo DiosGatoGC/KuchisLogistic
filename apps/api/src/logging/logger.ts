@@ -1,40 +1,30 @@
-import type { Request } from "express";
+export type SafeLogValue = string | number | boolean | null | undefined;
+export type SafeLogRecord = Record<string, SafeLogValue>;
 
-function normalizeCause(cause: unknown) {
-  if (cause instanceof Error) {
-    return { name: cause.name, message: cause.message };
-  }
-
-  if (typeof cause === "object" && cause !== null) {
-    const external = cause as Record<string, unknown>;
-    return {
-      name: "ExternalServiceError",
-      code: typeof external.code === "string" ? external.code : undefined,
-      status:
-        typeof external.status === "number" ? external.status : undefined,
-      message:
-        typeof external.message === "string" ? external.message : undefined,
-      hint: typeof external.hint === "string" ? external.hint : undefined,
-    };
-  }
-
-  return undefined;
+export interface ApiLogger {
+  info(record: SafeLogRecord): void;
+  error(record: SafeLogRecord): void;
 }
 
-export function logRequestError(error: unknown, req: Request) {
-  const normalizedError =
-    error instanceof Error
-      ? {
-          name: error.name,
-          message: error.message,
-          cause: normalizeCause(error.cause),
-        }
-      : { name: "UnknownError" };
+function serialize(record: SafeLogRecord) {
+  return JSON.stringify(record);
+}
 
-  console.error({
-    event: "api_request_failed",
-    method: req.method,
-    path: req.path,
-    error: normalizedError,
-  });
+export const jsonConsoleLogger: ApiLogger = {
+  info(record) {
+    console.info(serialize(record));
+  },
+  error(record) {
+    console.error(serialize(record));
+  },
+};
+
+export const silentLogger: ApiLogger = {
+  info() {},
+  error() {},
+};
+
+export function safeErrorType(error: unknown) {
+  const name = error instanceof Error ? error.name : "UnknownError";
+  return /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(name) ? name : "Error";
 }
