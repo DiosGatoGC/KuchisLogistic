@@ -12,7 +12,8 @@
     "test:integration:local": "tsx src/tests/integration/run-local.ts e2e",
     "test:e2e:local": "tsx src/tests/integration/run-local.ts e2e",
     "test:concurrency:local": "tsx src/tests/integration/run-local.ts concurrency",
-    "test:realtime:local": "tsx src/tests/integration/run-local.ts realtime"
+    "test:realtime:local": "tsx src/tests/integration/run-local.ts realtime",
+    "test:checkout-changed:local": "tsx src/tests/integration/run-local.ts checkout-changed"
   },
   "keywords": [],
   "author": "",

@@ -13,7 +13,7 @@ import type { AuthenticatedUser } from "../modules/auth/auth.types";
 import { checkoutRepository, type CheckoutRepository } from "../modules/checkout/checkout.repository";
 import { confirmPaymentSchema } from "../modules/checkout/checkout.schemas";
 import { checkoutService, CheckoutService } from "../modules/checkout/checkout.service";
-import type { CheckoutAggregate, PaymentMethod } from "../modules/checkout/checkout.types";
+import type { PaymentMethod } from "../modules/checkout/checkout.types";
 import { expensesRepository, type ExpensesRepository } from "../modules/expenses/expenses.repository";
 import { recordExpenseSchema, type RecordExpenseInput } from "../modules/expenses/expenses.schemas";
 import { expensesService, ExpensesService } from "../modules/expenses/expenses.service";
@@ -103,72 +103,49 @@ function fakeExpensesRepository(rows = [expenseAggregate()]): ExpensesRepository
   };
 }
 
-function checkoutAggregate(status: "OPEN" | "AWAITING_PAYMENT" = "OPEN"): CheckoutAggregate {
+function checkoutPreview(status: "OPEN" | "AWAITING_PAYMENT" | "PAID" = "OPEN") {
   return {
     session: {
       id: sessionId,
-      service_point_id: pointId,
-      shift_id: shiftId,
-      opened_by: actorId,
-      opened_by_role: "WAITER",
-      closed_by: null,
-      closed_by_role: null,
       status,
-      cancellation_reason: null,
-      opened_at: "2026-08-26T17:00:00.000Z",
-      closed_at: null,
+      servicePoint: { id: pointId, name: "Mesa 1", type: "TABLE" },
     },
-    servicePoint: { id: pointId, name: "Mesa 1", type: "TABLE" },
     items: [
       {
-        item: {
-          id: itemId,
-          product_id: productId,
-          product_name: "Hamburguesa snapshot",
-          unit_price: 10.01,
-          quantity: 2,
-          status: "DELIVERED",
-          line_number: 1,
-          current_service_session_id: sessionId,
-        },
+        id: itemId,
+        productId,
+        productName: "Hamburguesa snapshot",
+        unitPrice: 10.01,
+        quantity: 2,
+        status: "DELIVERED",
         additions: [
           {
-            id: additionId,
-            order_item_id: itemId,
-            product_id: additionId,
-            addition_name: "Queso snapshot",
-            unit_price: 0.99,
-            quantity_per_item: 2,
+            productId: additionId,
+            additionName: "Queso snapshot",
+            unitPrice: 0.99,
+            quantityPerItem: 2,
           },
         ],
+        lineTotal: 23.98,
       },
       {
-        item: {
-          id: productId,
-          product_id: additionId,
-          product_name: "Item transferido",
-          unit_price: 5.02,
-          quantity: 1,
-          status: "DELIVERED",
-          line_number: 2,
-          current_service_session_id: sessionId,
-        },
+        id: productId,
+        productId: additionId,
+        productName: "Item transferido",
+        unitPrice: 5.02,
+        quantity: 1,
+        status: "DELIVERED",
         additions: [],
-      },
-      {
-        item: {
-          id: additionId,
-          product_id: productId,
-          product_name: "Cancelado",
-          unit_price: 100,
-          quantity: 1,
-          status: "CANCELLED",
-          line_number: 3,
-          current_service_session_id: sessionId,
-        },
-        additions: [],
+        lineTotal: 5.02,
       },
     ],
+    businessAmount: 29,
+    paymentOptions: {
+      CASH: { method: "CASH", businessAmount: 29, feeRate: 0, feeAmount: 0, customerTotal: 29 },
+      YAPE: { method: "YAPE", businessAmount: 29, feeRate: 0, feeAmount: 0, customerTotal: 29 },
+      CARD: { method: "CARD", businessAmount: 29, feeRate: 0.05, feeAmount: 1.45, customerTotal: 30.45 },
+    },
+    checkoutToken: "opaque-checkout-token",
   };
 }
 
@@ -191,10 +168,10 @@ function paymentResult(method: PaymentMethod) {
 }
 
 function fakeCheckoutRepository(
-  aggregate: CheckoutAggregate | null = checkoutAggregate()
+  preview: ReturnType<typeof checkoutPreview> | null = checkoutPreview()
 ): CheckoutRepository {
   return {
-    async findPreview() { return aggregate; },
+    async findPreview() { return preview; },
     async pay(_id, method) { return paymentResult(method); },
   };
 }
@@ -294,7 +271,7 @@ describe("objective 10 expense schemas and services", () => {
 describe("objective 10 checkout preview and payment services", () => {
   test("allows preview for OPEN and AWAITING_PAYMENT sessions", async () => {
     for (const status of ["OPEN", "AWAITING_PAYMENT"] as const) {
-      const result = await new CheckoutService(fakeCheckoutRepository(checkoutAggregate(status))).preview(sessionId);
+      const result = await new CheckoutService(fakeCheckoutRepository(checkoutPreview(status))).preview(sessionId);
       assert.equal(result.session.status, status);
     }
   });
@@ -307,7 +284,7 @@ describe("objective 10 checkout preview and payment services", () => {
     assert.equal(result.items[0]?.lineTotal, 23.98);
     assert.equal(result.items[1]?.productName, "Item transferido");
     assert.equal(result.businessAmount, 29);
-    assert.equal(result.items.some((item) => item.productName === "Cancelado"), false);
+    assert.equal(result.checkoutToken, "opaque-checkout-token");
   });
 
   test("returns CASH and YAPE without fees and CARD with exactly 5%", async () => {
@@ -317,22 +294,21 @@ describe("objective 10 checkout preview and payment services", () => {
     assert.deepEqual(result.paymentOptions.CARD, { method: "CARD", businessAmount: 29, feeRate: 0.05, feeAmount: 1.45, customerTotal: 30.45 });
   });
 
-  test("rounds CARD fee to two decimals in integer cents", async () => {
-    const aggregate = checkoutAggregate();
-    aggregate.items = [{
-      item: { ...aggregate.items[0]!.item, unit_price: 10.1, quantity: 1 },
-      additions: [],
-    }];
-    const result = await new CheckoutService(fakeCheckoutRepository(aggregate)).preview(sessionId);
+  test("preserves the exact PostgreSQL CARD rounding in the preview mapping", async () => {
+    const preview = checkoutPreview();
+    preview.businessAmount = 10.1;
+    preview.paymentOptions.CARD = {
+      method: "CARD", businessAmount: 10.1, feeRate: 0.05, feeAmount: 0.51, customerTotal: 10.61,
+    };
+    const result = await new CheckoutService(fakeCheckoutRepository(preview)).preview(sessionId);
     assert.equal(result.paymentOptions.CARD.feeAmount, 0.51);
     assert.equal(result.paymentOptions.CARD.customerTotal, 10.61);
   });
 
   test("rejects preview for paid or cancelled sessions", async () => {
-    const aggregate = checkoutAggregate();
-    aggregate.session.status = "PAID";
+    const preview = checkoutPreview("PAID");
     await assert.rejects(
-      new CheckoutService(fakeCheckoutRepository(aggregate)).preview(sessionId),
+      new CheckoutService(fakeCheckoutRepository(preview)).preview(sessionId),
       (error: AppError) => error.statusCode === 409 && error.code === "SERVICE_SESSION_NOT_ACTIVE"
     );
   });
@@ -340,7 +316,7 @@ describe("objective 10 checkout preview and payment services", () => {
   test("accepts CASH, YAPE and CARD results returned by the payment RPC", async () => {
     const service = new CheckoutService(fakeCheckoutRepository());
     for (const method of ["CASH", "YAPE", "CARD"] as const) {
-      const result = await service.pay(sessionId, method, actor("CASHIER"));
+      const result = await service.pay(sessionId, method, "opaque-checkout-token", actor("CASHIER"));
       assert.equal(result.method, method);
       assert.equal(result.feeRate, method === "CARD" ? 0.05 : 0);
       assert.equal(result.customerTotal, method === "CARD" ? 42 : 40);
@@ -348,10 +324,12 @@ describe("objective 10 checkout preview and payment services", () => {
     }
   });
 
-  test("frontend payment schema accepts only a method and rejects financial fields", () => {
-    assert.equal(confirmPaymentSchema.safeParse({ method: "CASH" }).success, true);
-    assert.equal(confirmPaymentSchema.safeParse({ method: "CARD", businessAmount: 1 }).success, false);
-    assert.equal(confirmPaymentSchema.safeParse({ method: "TRANSFER" }).success, false);
+  test("payment schema requires an opaque non-empty token and rejects financial fields", () => {
+    assert.equal(confirmPaymentSchema.safeParse({ method: "CASH", expectedCheckoutToken: "opaque" }).success, true);
+    assert.equal(confirmPaymentSchema.safeParse({ method: "CASH" }).success, false);
+    assert.equal(confirmPaymentSchema.safeParse({ method: "CASH", expectedCheckoutToken: "  " }).success, false);
+    assert.equal(confirmPaymentSchema.safeParse({ method: "CARD", expectedCheckoutToken: "opaque", businessAmount: 1 }).success, false);
+    assert.equal(confirmPaymentSchema.safeParse({ method: "TRANSFER", expectedCheckoutToken: "opaque" }).success, false);
   });
 });
 
@@ -380,55 +358,36 @@ describe("objective 10 repository boundaries and RPC mapping", () => {
       return { data: paymentResult("CARD"), error: null };
     });
     mock.method(supabaseAdmin, "from", () => { throw new Error("manual financial write was not expected"); });
-    await checkoutRepository.pay(sessionId, "CARD", actor("CASHIER"));
+    await checkoutRepository.pay(sessionId, "CARD", "opaque-checkout-token", actor("CASHIER"));
     assert.equal(calledName, "logistics_pay_service_session");
-    assert.deepEqual(Object.keys(calledArgs).sort(), ["p_actor_id", "p_actor_role", "p_method", "p_service_session_id"]);
+    assert.deepEqual(Object.keys(calledArgs).sort(), ["p_actor_id", "p_actor_role", "p_expected_checkout_token", "p_method", "p_service_session_id"]);
     assert.equal(calledArgs.p_service_session_id, sessionId);
     assert.equal(calledArgs.p_actor_id, actorId);
     assert.equal(calledArgs.p_method, "CARD");
+    assert.equal(calledArgs.p_expected_checkout_token, "opaque-checkout-token");
     assert.equal("businessAmount" in calledArgs, false);
   });
 
-  test("preview reads current-session items, excludes CANCELLED and performs no RPC/write", async () => {
-    const operations: Array<{ table: string; method: string; args: unknown[] }> = [];
-    function builder(table: string, result: { data: unknown; error: null }) {
-      const value: Record<string, unknown> = {};
-      for (const method of ["select", "eq", "neq", "order", "in"] as const) {
-        value[method] = (...args: unknown[]) => {
-          operations.push({ table, method, args });
-          return value;
-        };
-      }
-      value.maybeSingle = async () => result;
-      value.then = (
-        resolve: (result: { data: unknown; error: null }) => unknown,
-        reject: (error: unknown) => unknown
-      ) => Promise.resolve(result).then(resolve, reject);
-      return value;
-    }
-    const aggregate = checkoutAggregate();
-    const session = aggregate.session;
-    const point = aggregate.servicePoint;
-    const item = aggregate.items[0]!.item;
-    const addition = aggregate.items[0]!.additions[0]!;
-    mock.method(supabaseAdmin, "from", (table: string) => {
-      if (table === "service_sessions") return builder(table, { data: session, error: null });
-      if (table === "service_points") return builder(table, { data: point, error: null });
-      if (table === "order_items") return builder(table, { data: [item], error: null });
-      if (table === "order_item_additions") return builder(table, { data: [addition], error: null });
-      throw new Error(`unexpected table ${table}`);
+  test("preview invokes only the canonical atomic preview RPC", async () => {
+    let calledName = "";
+    let calledArgs: Record<string, unknown> = {};
+    mock.method(supabaseAdmin, "from", () => { throw new Error("preview must not query tables directly"); });
+    mock.method(supabaseAdmin, "rpc", async (name: string, args?: object) => {
+      calledName = name;
+      calledArgs = (args ?? {}) as Record<string, unknown>;
+      return { data: checkoutPreview(), error: null };
     });
-    mock.method(supabaseAdmin, "rpc", () => { throw new Error("preview must not invoke RPCs"); });
     const result = await checkoutRepository.findPreview(sessionId);
-    assert.equal(result?.items.length, 1);
-    assert.equal(operations.some(({ table, method, args }) => table === "order_items" && method === "eq" && args[0] === "current_service_session_id" && args[1] === sessionId), true);
-    assert.equal(operations.some(({ table, method, args }) => table === "order_items" && method === "neq" && args[0] === "status" && args[1] === "CANCELLED"), true);
-    assert.equal(operations.some(({ method }) => ["insert", "update", "delete"].includes(method)), false);
+    assert.equal(calledName, "logistics_checkout_preview");
+    assert.deepEqual(calledArgs, { p_service_session_id: sessionId });
+    assert.deepEqual(result, checkoutPreview());
   });
 
   test("maps payment and expense domain errors without raw SQL messages", () => {
     const cases: Array<[string, number]> = [
       ["PAYMENT_ALREADY_EXISTS", 409],
+      ["CHECKOUT_CHANGED", 409],
+      ["CHECKOUT_TOKEN_REQUIRED", 400],
       ["SERVICE_SESSION_NOT_AWAITING_PAYMENT", 409],
       ["SHIFT_NOT_OPEN", 409],
       ["ORDER_ITEMS_NOT_DELIVERED", 409],
@@ -509,34 +468,37 @@ describe("objective 10 routes and capabilities", () => {
 
   test("WAITER can preview checkout but cannot confirm payment", async () => {
     authenticateAs("WAITER");
-    mock.method(checkoutService, "preview", async () => ({ session: { id: sessionId, status: "OPEN" }, items: [], businessAmount: 0, paymentOptions: {} }));
+    mock.method(checkoutService, "preview", async () => checkoutPreview());
     const preview = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/checkout`, { headers });
-    const payment = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH" }) });
+    const payment = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH", expectedCheckoutToken: "opaque" }) });
     assert.equal(preview.status, 200);
     assert.equal(payment.status, 403);
   });
 
   test("CASHIER confirms payment with route method and authenticated actor", async () => {
     authenticateAs("CASHIER");
-    mock.method(checkoutService, "pay", async (id: string, method: PaymentMethod, currentActor: AuthenticatedUser) => {
+    mock.method(checkoutService, "pay", async (id: string, method: PaymentMethod, expectedCheckoutToken: string, currentActor: AuthenticatedUser) => {
       assert.equal(id, sessionId);
       assert.equal(method, "CARD");
+      assert.equal(expectedCheckoutToken, "opaque-checkout-token");
       assert.equal(currentActor.id, actorId);
       return paymentResult(method);
     });
-    const response = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CARD" }) });
+    const response = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CARD", expectedCheckoutToken: "opaque-checkout-token" }) });
     assert.equal(response.status, 201);
   });
 
   test("KITCHEN cannot charge and invalid payment fields are rejected", async () => {
     authenticateAs("KITCHEN");
     const preview = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/checkout`, { headers });
-    const forbidden = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH" }) });
+    const forbidden = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH", expectedCheckoutToken: "opaque" }) });
     assert.equal(preview.status, 403);
     assert.equal(forbidden.status, 403);
     mock.restoreAll();
     authenticateAs("MANAGER");
-    const invalid = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH", businessAmount: 1 }) });
+    const missing = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH" }) });
+    const invalid = await fetch(`${baseUrl}/api/logistics/sessions/${sessionId}/payments`, { method: "POST", headers, body: JSON.stringify({ method: "CASH", expectedCheckoutToken: "opaque", businessAmount: 1 }) });
+    assert.equal(missing.status, 400);
     assert.equal(invalid.status, 400);
   });
 

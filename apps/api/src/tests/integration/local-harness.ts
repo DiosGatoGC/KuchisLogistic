@@ -153,10 +153,23 @@ export async function fixtures(client: SupabaseClient<Database>) {
   const kitchen = available.find((product) => product.preparation_station === "KITCHEN" && product.allows_additions);
   const drinks = available.find((product) => product.preparation_station === "DRINKS");
   const addition = available.find((product) => categories.get(product.category_id)?.slug === "adicionales");
-  if (!kitchen || !drinks || !addition || pointsResult.data.length !== 18) {
+  const orderableByPrice = new Map<number, typeof available>();
+  for (const product of available) {
+    if (categories.get(product.category_id)?.slug === "adicionales") continue;
+    const samePrice = orderableByPrice.get(product.price) ?? [];
+    orderableByPrice.set(product.price, [...samePrice, product]);
+  }
+  const samePriceProducts = [...orderableByPrice.values()].find((products) => products.length >= 2);
+  if (!kitchen || !drinks || !addition || !samePriceProducts || pointsResult.data.length !== 18) {
     throw new Error("Canonical local fixtures are incomplete.");
   }
-  return { kitchen, drinks, addition, points: pointsResult.data };
+  return {
+    kitchen,
+    drinks,
+    addition,
+    samePriceProducts: [samePriceProducts[0]!, samePriceProducts[1]!] as const,
+    points: pointsResult.data,
+  };
 }
 
 export async function openShift(baseUrl: string, token: string, openingCash = 100) {
@@ -207,6 +220,32 @@ export async function deliverItem(baseUrl: string, token: string, itemId: string
   }
 }
 
+export async function previewCheckout(baseUrl: string, token: string, sessionId: string) {
+  const preview = await request(baseUrl, `/api/logistics/sessions/${sessionId}/checkout`, { token });
+  if (
+    preview.status !== 200
+    || typeof preview.body.checkout?.checkoutToken !== "string"
+    || preview.body.checkout.checkoutToken.length === 0
+  ) {
+    throw new Error(`Checkout preview failed: ${JSON.stringify(preview.body)}`);
+  }
+  return preview.body.checkout as ApiBody;
+}
+
+export async function paySessionWithToken(
+  baseUrl: string,
+  token: string,
+  sessionId: string,
+  method: "CASH" | "YAPE" | "CARD",
+  expectedCheckoutToken: string
+) {
+  return request(baseUrl, `/api/logistics/sessions/${sessionId}/payments`, {
+    method: "POST",
+    token,
+    body: { method, expectedCheckoutToken },
+  });
+}
+
 export async function paySession(
   baseUrl: string,
   token: string,
@@ -219,11 +258,14 @@ export async function paySession(
     body: {},
   });
   if (awaiting.status !== 200) throw new Error(`Await payment failed: ${JSON.stringify(awaiting.body)}`);
-  const payment = await request(baseUrl, `/api/logistics/sessions/${sessionId}/payments`, {
-    method: "POST",
+  const preview = await previewCheckout(baseUrl, token, sessionId);
+  const payment = await paySessionWithToken(
+    baseUrl,
     token,
-    body: { method },
-  });
+    sessionId,
+    method,
+    preview.checkoutToken as string
+  );
   if (payment.status !== 201) throw new Error(`Payment failed: ${JSON.stringify(payment.body)}`);
   return payment.body.payment as ApiBody;
 }

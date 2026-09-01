@@ -18,6 +18,7 @@ const suites = {
   e2e: resolve(__dirname, "e2e.test.ts"),
   concurrency: resolve(__dirname, "concurrency.test.ts"),
   realtime: resolve(__dirname, "realtime.test.ts"),
+  "checkout-changed": resolve(__dirname, "checkout-changed.test.ts"),
 } as const;
 
 type SuiteName = keyof typeof suites;

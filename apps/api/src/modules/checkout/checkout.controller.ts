@@ -15,7 +15,11 @@ export const confirmPayment: RequestHandler = async (req, res, next) => {
   try {
     if (!req.authUser) throw unauthorized();
     const { id } = req.validatedParams as CheckoutSessionParams;
-    const { method } = req.validatedBody as ConfirmPaymentInput;
-    sendSuccess(res, { payment: await checkoutService.pay(id, method, req.authUser) }, 201);
+    const { method, expectedCheckoutToken } = req.validatedBody as ConfirmPaymentInput;
+    sendSuccess(
+      res,
+      { payment: await checkoutService.pay(id, method, expectedCheckoutToken, req.authUser) },
+      201
+    );
   } catch (error) { next(error); }
 };

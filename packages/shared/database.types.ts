@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.17"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1074,6 +1069,10 @@ export type Database = {
         }
         Returns: Json
       }
+      logistics_checkout_preview: {
+        Args: { p_service_session_id: string }
+        Returns: Json
+      }
       logistics_close_shift: {
         Args: {
           p_actor_id: string
@@ -1097,6 +1096,7 @@ export type Database = {
         Args: {
           p_actor_id: string
           p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_expected_checkout_token: string
           p_method: Database["public"]["Enums"]["payment_method"]
           p_service_session_id: string
         }

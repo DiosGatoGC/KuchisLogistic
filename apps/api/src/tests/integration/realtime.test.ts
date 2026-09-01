@@ -17,6 +17,7 @@ import {
   login,
   openPoint,
   openShift,
+  previewCheckout,
   publicClient,
   request,
   startApi,
@@ -685,13 +686,19 @@ test("real private Supabase Realtime logistics contract", { timeout: 180_000 }, 
     "await payment"
   );
 
+  const paymentPreview = await previewCheckout(api.baseUrl, activeToken, primarySessionId);
+
   const paymentResult = await captureExact(
     activeEvents,
     async () => {
       const response = await request(
         api.baseUrl,
         `/api/logistics/sessions/${primarySessionId}/payments`,
-        { method: "POST", token: activeToken, body: { method: "CASH" } }
+        {
+          method: "POST",
+          token: activeToken,
+          body: { method: "CASH", expectedCheckoutToken: paymentPreview.checkoutToken },
+        }
       );
       assert.equal(response.status, 201, JSON.stringify(response.body));
       return response;

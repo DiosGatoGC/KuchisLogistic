@@ -10,6 +10,7 @@ import {
   login,
   openPoint,
   paySession,
+  previewCheckout,
   request,
   startApi,
   type ApiResult,
@@ -180,17 +181,18 @@ test("real PostgreSQL concurrency invariants A-H", { timeout: 120_000 }, async (
       body: {},
     });
     assert.equal(awaiting.status, 200);
+    const preview = await previewCheckout(api.baseUrl, firstToken, session.id);
 
     const results = await Promise.all([
       request(api.baseUrl, `/api/logistics/sessions/${session.id}/payments`, {
         method: "POST",
         token: firstToken,
-        body: { method: "CASH" },
+        body: { method: "CASH", expectedCheckoutToken: preview.checkoutToken },
       }),
       request(api.baseUrl, `/api/logistics/sessions/${session.id}/payments`, {
         method: "POST",
         token: secondToken,
-        body: { method: "CASH" },
+        body: { method: "CASH", expectedCheckoutToken: preview.checkoutToken },
       }),
     ]);
 
@@ -249,6 +251,7 @@ test("real PostgreSQL concurrency invariants A-H", { timeout: 120_000 }, async (
       body: {},
     });
     assert.equal(awaiting.status, 200);
+    const preview = await previewCheckout(api.baseUrl, firstToken, origin.id);
 
     const [transfer, payment] = await Promise.all([
       request(api.baseUrl, `/api/logistics/order-items/${itemId}/transfer`, {
@@ -263,7 +266,7 @@ test("real PostgreSQL concurrency invariants A-H", { timeout: 120_000 }, async (
       request(api.baseUrl, `/api/logistics/sessions/${origin.id}/payments`, {
         method: "POST",
         token: secondToken,
-        body: { method: "YAPE" },
+        body: { method: "YAPE", expectedCheckoutToken: preview.checkoutToken },
       }),
     ]);
 
@@ -325,7 +328,7 @@ test("real PostgreSQL concurrency invariants A-H", { timeout: 120_000 }, async (
     } else {
       assert.equal(transfer.status, 200);
       assert.equal(payment.status, 409);
-      assert.equal(payment.body.error?.code, "NOTHING_TO_PAY");
+      assert.equal(payment.body.error?.code, "CHECKOUT_CHANGED");
       assert.equal(storedItem.data.current_service_session_id, destination.id);
       assert.equal(storedItem.data.status, "DELIVERED");
       assert.equal(originPayments.data.length, 0);
