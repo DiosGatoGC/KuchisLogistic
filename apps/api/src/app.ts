@@ -8,6 +8,7 @@ import { createErrorHandler, notFoundHandler } from "./middlewares/error.middlew
 import { privateNoStore, requireJsonContentType } from "./middlewares/http-security.middleware";
 import { createRateLimiters } from "./middlewares/rate-limit.middleware";
 import { createRequestContextMiddleware } from "./middlewares/request-context.middleware";
+import { readinessService, type ReadinessChecker } from "./readiness/readiness.service";
 import authRouter from "./modules/auth/auth.routes";
 import checkoutRouter from "./modules/checkout/checkout.routes";
 import expensesRouter from "./modules/expenses/expenses.routes";
@@ -21,12 +22,13 @@ import shiftsRouter from "./modules/shifts/shifts.routes";
 import transfersRouter from "./modules/transfers/transfers.routes";
 import usersRouter from "./modules/users/users.routes";
 import categoriesRouter from "./routes/categories.routes";
-import healthRouter from "./routes/health.routes";
+import { createHealthRouter } from "./routes/health.routes";
 import productsRouter from "./routes/products.routes";
 
 export interface CreateAppOptions {
   logger?: ApiLogger;
   configureRoutes?: (app: Express) => void;
+  readiness?: ReadinessChecker;
 }
 
 export function createApp(config: ApiEnv = env, options: CreateAppOptions = {}) {
@@ -48,7 +50,7 @@ export function createApp(config: ApiEnv = env, options: CreateAppOptions = {}) 
   );
   app.use(cors(createCorsOptions(config)));
 
-  app.use("/health", healthRouter);
+  app.use("/health", createHealthRouter(options.readiness ?? readinessService));
 
   app.use("/api/logistics", privateNoStore);
   app.use("/api/auth", privateNoStore);

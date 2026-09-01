@@ -14,6 +14,8 @@ const rawEnvSchema = z.object({
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   SUPABASE_URL: z.url(),
   SUPABASE_SECRET_KEY: z.string().min(16),
+  SUPABASE_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(30_000).default(8_000),
+  READINESS_TIMEOUT_MS: z.coerce.number().int().min(250).max(10_000).default(2_000),
   JSON_BODY_LIMIT: z.string().default("100kb"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10_000).default(600),
@@ -33,6 +35,8 @@ export interface ApiEnv {
   CORS_ALLOWED_ORIGINS: readonly string[] | "*";
   SUPABASE_URL: string;
   SUPABASE_SECRET_KEY: string;
+  SUPABASE_REQUEST_TIMEOUT_MS: number;
+  READINESS_TIMEOUT_MS: number;
   JSON_BODY_LIMIT: string;
   JSON_BODY_LIMIT_BYTES: number;
   RATE_LIMIT_WINDOW_MS: number;
