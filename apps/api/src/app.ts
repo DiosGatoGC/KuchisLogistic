@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import helmet from "helmet";
 import { createCorsOptions } from "./config/cors";
+import { resolveDeploymentContext, type DeploymentContext } from "./config/deployment";
 import { env, type ApiEnv } from "./config/env";
 import { jsonConsoleLogger, silentLogger, type ApiLogger } from "./logging/logger";
 import { createErrorHandler, notFoundHandler } from "./middlewares/error.middleware";
@@ -29,13 +30,15 @@ export interface CreateAppOptions {
   logger?: ApiLogger;
   configureRoutes?: (app: Express) => void;
   readiness?: ReadinessChecker;
+  deployment?: DeploymentContext;
 }
 
 export function createApp(config: ApiEnv = env, options: CreateAppOptions = {}) {
   const app = express();
   const logger = options.logger
     ?? (config.NODE_ENV === "test" ? silentLogger : jsonConsoleLogger);
-  const limiters = createRateLimiters(config, logger);
+  const deployment = options.deployment ?? resolveDeploymentContext();
+  const limiters = createRateLimiters(config, logger, deployment);
 
   app.disable("x-powered-by");
   app.set("trust proxy", config.TRUST_PROXY);

@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { rateLimit, type Options } from "express-rate-limit";
+import type { DeploymentContext } from "../config/deployment";
 import type { ApiEnv } from "../config/env";
 import type { ApiLogger } from "../logging/logger";
 import { safeErrorType } from "../logging/logger";
+import { clientIpRateLimitKey } from "./client-ip";
 
 function libraryLogger(logger: ApiLogger): Options["logger"] {
   const write = (error: unknown) => {
@@ -49,7 +51,11 @@ function usernameKey(req: Parameters<Options["keyGenerator"]>[0]) {
   return createHash("sha256").update(normalized || "invalid-input").digest("hex");
 }
 
-export function createRateLimiters(config: ApiEnv, logger: ApiLogger) {
+export function createRateLimiters(
+  config: ApiEnv,
+  logger: ApiLogger,
+  deployment: DeploymentContext
+) {
   const validation = config.TRUST_PROXY === false
     ? { xForwardedForHeader: false, forwardedHeader: false }
     : true;
@@ -58,7 +64,7 @@ export function createRateLimiters(config: ApiEnv, logger: ApiLogger) {
     ...commonOptions(logger),
     windowMs: config.RATE_LIMIT_WINDOW_MS,
     limit: config.RATE_LIMIT_MAX,
-    ipv6Subnet: 56,
+    keyGenerator: (request) => clientIpRateLimitKey(request, deployment),
     identifier: "global-api",
     validate: validation,
     handler: handler(logger, "RATE_LIMITED", "Demasiadas solicitudes. Inténtalo nuevamente más tarde."),
@@ -68,7 +74,7 @@ export function createRateLimiters(config: ApiEnv, logger: ApiLogger) {
     ...commonOptions(logger),
     windowMs: config.LOGIN_IP_WINDOW_MS,
     limit: config.LOGIN_IP_MAX,
-    ipv6Subnet: 56,
+    keyGenerator: (request) => clientIpRateLimitKey(request, deployment),
     identifier: "login-ip",
     validate: validation,
     skipSuccessfulRequests: true,

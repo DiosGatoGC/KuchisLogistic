@@ -128,6 +128,9 @@ export function parseEnv(input: Record<string, unknown>): ApiEnv {
   ) {
     throw new EnvValidationError(["SUPABASE_URL"]);
   }
+  if (data.READINESS_TIMEOUT_MS >= data.SUPABASE_REQUEST_TIMEOUT_MS) {
+    throw new EnvValidationError(["READINESS_TIMEOUT_MS"]);
+  }
 
   const bodyLimit = parseBodyLimit(data.JSON_BODY_LIMIT);
   return {
