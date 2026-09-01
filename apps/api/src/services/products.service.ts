@@ -1,10 +1,10 @@
-import { supabase } from "../config/supabase";
+import { supabaseAdmin } from "../config/supabase";
 
 export async function getActiveProducts(categorySlug?: string) {
   let categoryId: string | undefined;
 
   if (categorySlug) {
-    const { data: category, error: categoryError } = await supabase
+    const { data: category, error: categoryError } = await supabaseAdmin
       .from("categories")
       .select("id")
       .eq("slug", categorySlug)
@@ -22,7 +22,7 @@ export async function getActiveProducts(categorySlug?: string) {
     categoryId = category.id;
   }
 
-  let query = supabase
+  let query = supabaseAdmin
     .from("products")
     .select(`
       id,
@@ -50,7 +50,7 @@ export async function getActiveProducts(categorySlug?: string) {
     let imageUrl: string | null = null;
 
     if (product.image_path) {
-      const { data: imageData } = supabase.storage
+      const { data: imageData } = supabaseAdmin.storage
         .from("product-images")
         .getPublicUrl(product.image_path);
 

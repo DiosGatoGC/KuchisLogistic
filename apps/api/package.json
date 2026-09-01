@@ -7,17 +7,30 @@
     "dev": "tsx watch src/index.ts",
     "compile": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "NODE_ENV=test node --test --import tsx src/tests/*.test.ts",
+    "test:hardening": "NODE_ENV=test node --test --import tsx src/tests/security-hardening.test.ts",
+    "test:integration:local": "tsx src/tests/integration/run-local.ts e2e",
+    "test:e2e:local": "tsx src/tests/integration/run-local.ts e2e",
+    "test:concurrency:local": "tsx src/tests/integration/run-local.ts concurrency",
+    "test:realtime:local": "tsx src/tests/integration/run-local.ts realtime",
+    "test:checkout-changed:local": "tsx src/tests/integration/run-local.ts checkout-changed"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
+    "@kuchis/shared": "file:../../packages/shared",
     "@supabase/supabase-js": "^2.112.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "8.7.0",
+    "helmet": "8.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

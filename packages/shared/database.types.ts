@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.15"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -104,6 +99,7 @@ export type Database = {
         Row: {
           card_difference: number | null
           cash_difference: number | null
+          cash_expenses_snapshot: number
           cash_sales_expected: number
           confirmed_card_customer_total: number
           confirmed_yape: number
@@ -126,6 +122,7 @@ export type Database = {
         Insert: {
           card_difference?: number | null
           cash_difference?: number | null
+          cash_expenses_snapshot?: number
           cash_sales_expected?: number
           confirmed_card_customer_total: number
           confirmed_yape: number
@@ -148,6 +145,7 @@ export type Database = {
         Update: {
           card_difference?: number | null
           cash_difference?: number | null
+          cash_expenses_snapshot?: number
           cash_sales_expected?: number
           confirmed_card_customer_total?: number
           confirmed_yape?: number
@@ -553,7 +551,7 @@ export type Database = {
           {
             foreignKeyName: "payments_service_session_id_fkey"
             columns: ["service_session_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "service_sessions"
             referencedColumns: ["id"]
           },
@@ -846,6 +844,8 @@ export type Database = {
           created_at: string
           customer_card_total: number
           id: string
+          operational_expenses_count: number
+          operational_expenses_total: number
           order_item_transfers_count: number
           order_items_count: number
           orders_count: number
@@ -874,6 +874,8 @@ export type Database = {
           created_at?: string
           customer_card_total?: number
           id?: string
+          operational_expenses_count?: number
+          operational_expenses_total?: number
           order_item_transfers_count?: number
           order_items_count?: number
           orders_count?: number
@@ -902,6 +904,8 @@ export type Database = {
           created_at?: string
           customer_card_total?: number
           id?: string
+          operational_expenses_count?: number
+          operational_expenses_total?: number
           order_item_transfers_count?: number
           order_items_count?: number
           orders_count?: number
@@ -926,6 +930,76 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: true
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          custom_category: string | null
+          description: string
+          id: string
+          recorded_at: string
+          recorded_by: string
+          recorded_by_role: Database["public"]["Enums"]["user_role"]
+          shift_id: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+          voided_by_role: Database["public"]["Enums"]["user_role"] | null
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          custom_category?: string | null
+          description: string
+          id?: string
+          recorded_at?: string
+          recorded_by: string
+          recorded_by_role: Database["public"]["Enums"]["user_role"]
+          shift_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          voided_by_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          custom_category?: string | null
+          description?: string
+          id?: string
+          recorded_at?: string
+          recorded_by?: string
+          recorded_by_role?: Database["public"]["Enums"]["user_role"]
+          shift_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          voided_by_role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_expenses_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_expenses_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_expenses_voided_by_fkey"
+            columns: ["voided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -986,9 +1060,131 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      logistics_cancel_order_item: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      logistics_checkout_preview: {
+        Args: { p_service_session_id: string }
+        Returns: Json
+      }
+      logistics_close_shift: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_closing_notes: string
+          p_shift_id: string
+        }
+        Returns: Json
+      }
+      logistics_create_order: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_items: Json
+          p_notes: string
+          p_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_pay_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_expected_checkout_token: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_reconcile_shift: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_confirmed_card_customer_total: number
+          p_confirmed_yape: number
+          p_counted_cash: number
+          p_notes: string
+          p_shift_id: string
+        }
+        Returns: Json
+      }
+      logistics_record_shift_expense: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_amount: number
+          p_category: Database["public"]["Enums"]["expense_category"]
+          p_custom_category: string
+          p_description: string
+        }
+        Returns: Json
+      }
+      logistics_release_empty_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_reason: string
+          p_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_set_product_availability: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_is_available: boolean
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      logistics_transfer_order_item: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+          p_quantity: number
+          p_reason: string
+          p_to_service_session_id: string
+        }
+        Returns: Json
+      }
+      logistics_transfer_service_session: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_reason: string
+          p_service_session_id: string
+          p_to_service_point_id: string
+        }
+        Returns: Json
+      }
+      logistics_transition_order_item: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_order_item_id: string
+        }
+        Returns: Json
+      }
+      logistics_void_shift_expense: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: Database["public"]["Enums"]["user_role"]
+          p_expense_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
+      expense_category: "SUPPLIES" | "CLEANING" | "OTHER"
       order_item_cancellation_origin_status:
         | "PENDING"
         | "PREPARING"
@@ -1136,6 +1332,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      expense_category: ["SUPPLIES", "CLEANING", "OTHER"],
       order_item_cancellation_origin_status: [
         "PENDING",
         "PREPARING",

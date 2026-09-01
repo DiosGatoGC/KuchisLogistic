@@ -1,7 +1,7 @@
-import { supabase } from "../config/supabase";
+import { supabaseAdmin } from "../config/supabase";
 
 export async function getActiveCategories() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("categories")
     .select("id, name, slug, sort_order")
     .eq("is_active", true)

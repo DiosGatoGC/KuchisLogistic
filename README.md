@@ -22,7 +22,7 @@ El proyecto estará dividido en **dos aplicaciones web independientes**, con exp
    - Mesas y barra.
    - Comandas.
    - Salón.
-   - Parrilla.
+   - Cocina y bebidas.
    - Caja.
    - Turnos.
    - Usuarios.
@@ -42,7 +42,7 @@ Construir una solución web sencilla, rápida, segura y escalable que permita:
 - mostrar el total estimado según el método de pago;
 - reducir el uso de cartas físicas;
 - reemplazar gradualmente las comandas en papel;
-- mejorar la comunicación entre salón, parrilla y caja;
+- mejorar la comunicación entre salón, cocina, bebidas y caja;
 - facilitar el cierre de caja;
 - mantener una fuente única de productos, precios y disponibilidad;
 - gestionar usuarios internos mediante roles;
@@ -109,7 +109,7 @@ No debe encontrar:
 - panel administrativo;
 - opciones internas;
 - caja;
-- parrilla;
+- cocina y bebidas;
 - usuarios;
 - mensajes que le hagan preguntarse qué debe hacer.
 
@@ -235,7 +235,7 @@ Su pantalla inicial será únicamente de autenticación.
 ```text
 KUCHI'S LOGÍSTICO
 
-Correo
+Usuario
 [________________]
 
 Contraseña
@@ -245,6 +245,10 @@ Contraseña
 ```
 
 No habrá registro público.
+
+El acceso visible utiliza `username` + contraseña. El campo `auth_email`
+existe únicamente como detalle interno de integración con Supabase Auth y no
+se presenta al usuario como credencial de inicio de sesión.
 
 ---
 
@@ -271,17 +275,18 @@ Administrador
      v
 Crear usuario
      |
-     +--> Salón
-     +--> Parrilla
-     +--> Caja
-     +--> Administrador
+     +--> WAITER
+     +--> CASHIER
+     +--> KITCHEN
+     +--> MANAGER
+     +--> ADMIN
 ```
 
 ---
 
 # 10. Roles
 
-## 10.1. Salón
+## 10.1. Mesero (`WAITER`)
 
 Puede:
 
@@ -306,7 +311,7 @@ No puede:
 
 ---
 
-## 10.2. Parrilla
+## 10.2. Cocina (`KITCHEN`)
 
 Puede:
 
@@ -336,7 +341,10 @@ No necesita acceso a:
 
 ---
 
-## 10.3. Caja
+La preparación se divide en las estaciones operativas `KITCHEN` (Cocina) y
+`DRINKS` (Bebidas). `DRINKS` es una estación de preparación, no un rol.
+
+## 10.3. Caja (`CASHIER`)
 
 Puede:
 
@@ -352,12 +360,12 @@ Puede:
 
 ---
 
-## 10.4. Administrador
+## 10.4. Administración (`ADMIN` y `MANAGER`)
 
 Puede:
 
 - realizar operaciones de salón;
-- realizar operaciones de parrilla;
+- realizar operaciones de cocina y bebidas;
 - realizar operaciones de caja;
 - crear usuarios;
 - cambiar roles;
@@ -378,9 +386,12 @@ El sistema contemplará inicialmente:
 ```text
 7 mesas
 4 posiciones de barra
+7 posiciones para llevar
 ---------------------
-11 puntos de atención
+18 puntos de atención
 ```
+
+Nombres canónicos: `Mesa 1`–`Mesa 7`, `B1`–`B4` y `LL1`–`LL7`.
 
 Cada punto tendrá estado operativo propio en la interfaz.
 
@@ -396,8 +407,9 @@ Mesa 2      OCUPADA
 Mesa 3      LIBRE
 Mesa 4      POR COBRAR
 ...
-Barra 1     OCUPADA
-Barra 2     LIBRE
+B1          OCUPADA
+B2          LIBRE
+LL1         LIBRE
 ```
 
 ---
@@ -414,7 +426,7 @@ ABIERTA
   |
   +--> generar comanda
   |
-  +--> enviar a parrilla
+  +--> enviar a preparación (KITCHEN/Cocina o DRINKS/Bebidas)
   |
   +--> agregar nuevos consumos
   |
@@ -591,7 +603,7 @@ Responsabilidades:
 - dashboard;
 - mesas;
 - comandas;
-- parrilla;
+- cocina y bebidas;
 - caja;
 - administración;
 - usuarios;
@@ -654,9 +666,10 @@ audit_logs
 - **`service_points`** representa cualquier punto físico de atención de KUCHI'S, no solamente mesas.
   - `TABLE` = mesa.
   - `BAR` = posición de barra.
+  - `TAKEAWAY` = posición para llevar.
 - **`service_sessions`** representa una atención concreta ocurrida en un punto de servicio.
   - Ejemplo: la ocupación de la Mesa 7 entre las 20:10 y las 21:05.
-- Los roles iniciales (`ADMIN`, `CASHIER`, `HALL`, `GRILL`) se almacenarán en el perfil del usuario; no se necesita una tabla `roles` durante el MVP.
+- Los roles (`ADMIN`, `MANAGER`, `WAITER`, `CASHIER`, `KITCHEN`) se almacenan en el perfil del usuario; no se necesita una tabla `roles` durante el MVP.
 - Las simulaciones realizadas en KUCHI'S Clientes no se almacenarán en PostgreSQL durante el MVP.
 - Los precios históricos de una venta se conservarán dentro de `order_items` para que una modificación futura del precio de un producto no cambie ventas antiguas.
 - Los productos y puntos de servicio se desactivarán mediante **soft delete** (`is_active = false`) en lugar de eliminar registros históricos.
@@ -711,7 +724,7 @@ Salón
 Backend / Supabase
   |
   v
-Parrilla
+Cocina / Bebidas
 ```
 
 También podrá utilizarse para:
@@ -909,9 +922,10 @@ Digitalizar el flujo de salón.
 
 Trabajo:
 
-- configurar 11 puntos de servicio;
+- configurar 18 puntos de servicio;
   - 7 de tipo `TABLE`;
   - 4 de tipo `BAR`;
+  - 7 de tipo `TAKEAWAY`;
 - estados;
 - apertura;
 - sesiones de atención (`service_sessions`);
@@ -937,7 +951,7 @@ Comanda
 
 ---
 
-# 28. Fase 4 — Parrilla y Realtime
+# 28. Fase 4 — Preparación y Realtime
 
 ## Objetivo
 
@@ -945,7 +959,7 @@ Digitalizar la recepción y preparación de pedidos.
 
 Trabajo:
 
-- vista de parrilla;
+- vistas de `KITCHEN` (Cocina) y `DRINKS` (Bebidas);
 - comandas entrantes;
 - estado pendiente;
 - estado preparando;
@@ -955,7 +969,7 @@ Trabajo:
 Entregable:
 
 ```text
-Salón -> Comanda -> Parrilla -> Listo
+Salón -> Comanda -> Cocina/Bebidas -> Listo
 ```
 
 ---
@@ -1086,7 +1100,7 @@ Usuarios de prueba:
 
 - propietarios;
 - salón;
-- parrilla;
+- cocina y bebidas;
 - caja.
 
 Se evaluará:
@@ -1157,7 +1171,7 @@ Podrán añadirse en futuras versiones.
 [9] Mesas + Comandas
       |
       v
-[10] Parrilla + Realtime
+[10] Cocina/Bebidas + Realtime
       |
       v
 [11] Caja + Turnos

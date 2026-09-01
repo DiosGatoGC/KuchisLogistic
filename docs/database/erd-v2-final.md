@@ -1,885 +1,465 @@
 # ERD v2 FINAL — KUCHI'S
 
-## 1. Estado del documento
-
-**Versión:** 2.0  
-**Estado:** Aprobado para implementación  
-**Base de datos objetivo:** PostgreSQL desplegado en Supabase  
-**Aplicaciones soportadas:**
-
-- KUCHI'S Clientes
-- KUCHI'S Logístico
-
-Este documento reemplaza al ERD v1 y consolida todas las decisiones funcionales y técnicas tomadas antes de crear físicamente la base de datos.
-
----
-
-# 2. Objetivo del modelo
-
-El modelo de datos de KUCHI'S debe permitir:
-
-- mantener una carta única de productos;
-- servir la carta pública a KUCHI'S Clientes;
-- permitir simulaciones de pedido sin crear ventas reales;
-- administrar usuarios internos y roles;
-- manejar 7 mesas y 4 posiciones de barra;
-- registrar múltiples atenciones por cada punto de servicio;
-- registrar comandas y sus productos;
-- conservar precios históricos;
-- registrar pagos;
-- gestionar turnos;
-- guardar cierres de turno;
-- consultar historial detallado por fecha;
-- consultar qué ocurrió en cada mesa/barra durante un turno;
-- mantener trazabilidad para futuras funciones, como inventario o analítica.
-
----
-
-# 3. Principios principales del diseño
-
-## 3.1. Dos aplicaciones, una fuente de datos
-
-```text
-KUCHI'S CLIENTES
-        |
-        | consulta
-        v
- categories / products
-        |
-        v
-     Backend
-        |
-        v
- PostgreSQL / Supabase
-
-
-KUCHI'S LOGÍSTICO
-        |
-        | operaciones internas
-        v
- profiles
- service_points
- service_sessions
- orders
- order_items
- payments
- shifts
- shift_closures
- audit_logs
-```
-
-Ambas plataformas comparten la misma base de datos.
-
----
-
-# 4. KUCHI'S Clientes
-
-KUCIHI'S Clientes utilizará principalmente:
-
-```text
-categories
-products
-```
-
-El simulador de pedido no generará una venta real.
-
-Durante el MVP:
-
-```text
-Simulación
-= productos seleccionados
-+ cantidades
-+ subtotal
-+ método de pago estimado
-+ posible recargo de tarjeta
-```
-
-La simulación se mantiene en el frontend y no crea:
-
-- `service_sessions`;
-- `orders`;
-- `order_items`;
-- `payments`;
-- `shifts`.
-
----
-
-# 5. Puntos de servicio
-
-Se utiliza:
-
-```text
-service_points
-```
-
-en lugar de una tabla limitada a mesas.
-
-Esto permite representar:
-
-```text
-TABLE = Mesa
-BAR   = Posición de barra
-```
-
-Datos físicos iniciales:
-
-```text
-Mesa 1
-Mesa 2
-Mesa 3
-Mesa 4
-Mesa 5
-Mesa 6
-Mesa 7
-
-Barra 1
-Barra 2
-Barra 3
-Barra 4
-```
-
-Total:
-
-```text
-11 puntos de servicio
-```
-
----
-
-# 6. `is_active` NO significa ocupado
-
-Un punto puede existir pero estar deshabilitado temporalmente.
-
-Ejemplo:
-
-```text
-Barra 4
-is_active = false
-```
-
-significa:
-
-> Barra 4 no está habilitada actualmente.
-
-No significa:
-
-> Barra 4 está libre u ocupada.
-
-La ocupación se calcula mediante `service_sessions`.
-
----
-
-# 7. Sesiones de atención
-
-Una mesa física puede atender muchos grupos durante un mismo turno.
-
-Por eso:
-
-```text
-service_points
-```
-
-representa el lugar físico.
-
-Mientras que:
-
-```text
-service_sessions
-```
-
-representa cada atención concreta.
-
-Ejemplo:
-
-```text
-Mesa 1
-|
-+-- Atención A
-|   18:02 -> 18:47
-|
-+-- Atención B
-|   19:10 -> 19:55
-|
-+-- Atención C
-|   20:16 -> 20:59
-|
-+-- Atención D
-    21:24 -> 22:02
-```
-
-Las cuatro atenciones pertenecen a la misma Mesa 1, pero son clientes diferentes.
-
-Esto permite consultar el historial detallado posteriormente.
-
----
-
-# 8. Historial detallado
-
-El historial NO se guardará en una única tabla genérica llamada `history`.
-
-Los datos históricos ya se conservan mediante relaciones:
-
-```text
-shifts
- |
- +-- service_sessions
- |       |
- |       +-- orders
- |       |      |
- |       |      +-- order_items
- |       |
- |       +-- payments
- |
- +-- shift_closures
-```
-
-Esto permite consultar:
-
-```text
-Turno del 16/08/2026
-|
-+-- Mesa 1 - Atención 1
-|     +-- comandas
-|     +-- productos
-|     +-- cantidades
-|     +-- precios
-|     +-- pago
-|
-+-- Mesa 1 - Atención 2
-|
-+-- Mesa 4 - Atención 1
-|
-+-- Barra 2 - Atención 1
-|
-...
-```
-
----
-
-# 9. Cierre de turno
-
-Se agrega:
-
-```text
-shift_closures
-```
-
-Esta tabla representa la fotografía definitiva de un turno una vez cerrado.
-
-La relación es:
-
-```text
-shifts
-  |
-  | 1 : 1
-  v
-shift_closures
-```
-
-Un turno puede tener como máximo un cierre oficial.
-
----
-
-# 10. Snapshot del cierre
-
-`shift_closures` almacenará valores agregados:
-
-- venta real total;
-- efectivo;
-- Yape;
-- tarjeta;
-- recargos POS;
-- total pagado por clientes con tarjeta;
-- número de atenciones;
-- número de atenciones canceladas;
-- número de comandas;
-- resumen JSON;
-- posible ruta futura de reporte.
-
-El detalle completo NO se duplicará dentro del cierre.
-
-Para ver qué pidió una mesa se consultará:
-
-```text
-service_sessions
-      |
-      v
-orders
-      |
-      v
-order_items
-```
-
----
-
-# 11. Historial por calendario
-
-La futura interfaz podrá consultar:
-
-```text
-Fecha
-  |
-  v
-Shift
-  |
-  v
-Shift Closure
-```
-
-Ejemplo:
-
-```text
-16/08/2026
-
-Venta total: S/ 1,140.00
-Efectivo:    S/   420.00
-Yape:        S/   390.00
-Tarjeta:     S/   330.00
-POS:         S/    16.50
-
-Atenciones: 52
-Comandas:   79
-
-[ Ver detalle ]
-```
-
-Al ingresar al detalle:
-
-```text
-Mesa 1
- +-- Atención 1
- +-- Atención 2
- +-- Atención 3
- +-- Atención 4
-
-Mesa 2
- +-- Atención 1
- +-- Atención 2
-
-...
-
-Barra 4
- +-- Atención 1
-```
-
----
-
-# 12. Diagrama entidad-relación
+## 1. Estado y fuentes de verdad
+
+**Estado:** alineado con el backend V1 actual
+
+**Base de datos:** PostgreSQL en Supabase
+
+**Fecha de revisión:** 2026-08-27
+
+Este documento describe el modelo físico vigente. Sus fuentes de verdad son,
+en este orden:
+
+1. `supabase/migrations/`
+2. `packages/shared/database.types.ts`
+3. repositories y servicios de `apps/api`
+
+El inventario comprende las 16 tablas de negocio del schema `public`.
+`auth.users` pertenece a Supabase Auth y se relaciona con `profiles`, pero no se
+cuenta como tabla propia de KUCHI'S.
+
+## 2. Principios estructurales
+
+- La carta pública consulta `categories` y `products`; una simulación pública
+  no crea registros operativos.
+- La ocupación de un punto se deriva de una `service_session` activa. No existe
+  un campo `is_occupied`.
+- Una sesión puede contener varias comandas (`orders`).
+- El estado de preparación vive en cada `order_item`, no en `orders`.
+- Los nombres, precios, estaciones y roles relevantes se guardan como snapshots
+  cuando corresponde para preservar historia.
+- `order_items.order_id` conserva el origen histórico;
+  `order_items.current_service_session_id` identifica al propietario operativo
+  y económico actual.
+- Pagos, cierres, conciliaciones y transferencias conservan historia; no se
+  eliminan para corregir el pasado.
+- Los gastos se anulan explícitamente, sin borrado físico.
+
+## 3. Diagrama de relaciones
 
 ```mermaid
 erDiagram
+    AUTH_USERS ||--o| PROFILES : "id"
 
-    PROFILES {
-        uuid id PK
-        varchar full_name
-        user_role role
-        boolean is_active
-        timestamptz created_at
-    }
+    CATEGORIES ||--o{ PRODUCTS : "category_id"
+    PRODUCTS ||--o{ ORDER_ITEMS : "product_id"
+    PRODUCTS ||--o{ ORDER_ITEM_ADDITIONS : "product_id"
 
-    CATEGORIES {
-        uuid id PK
-        varchar name
-        varchar slug
-        integer sort_order
-        boolean is_active
-    }
+    SERVICE_POINTS ||--o{ SERVICE_SESSIONS : "service_point_id"
+    SHIFTS ||--o{ SERVICE_SESSIONS : "shift_id"
+    SERVICE_SESSIONS ||--o{ ORDERS : "service_session_id"
+    ORDERS ||--o{ ORDER_ITEMS : "order_id"
+    SERVICE_SESSIONS ||--o{ ORDER_ITEMS : "current_service_session_id"
+    ORDER_ITEMS ||--o{ ORDER_ITEM_ADDITIONS : "order_item_id"
 
-    PRODUCTS {
-        uuid id PK
-        uuid category_id FK
-        varchar name
-        text description
-        numeric price
-        text image_path
-        boolean is_available
-        boolean is_active
-        timestamptz created_at
-        timestamptz updated_at
-    }
+    SERVICE_SESSIONS ||--o{ SERVICE_SESSION_TRANSFERS : "service_session_id"
+    ORDER_ITEMS ||--o{ ORDER_ITEM_TRANSFERS : "order_item_id"
 
-    SERVICE_POINTS {
-        uuid id PK
-        varchar name
-        service_point_type type
-        integer sort_order
-        boolean is_active
-    }
+    SHIFTS ||--o{ PAYMENTS : "shift_id"
+    SERVICE_SESSIONS ||--o| PAYMENTS : "service_session_id"
+    SHIFTS ||--o{ SHIFT_EXPENSES : "shift_id"
+    SHIFTS ||--o| SHIFT_CLOSURES : "shift_id"
+    SHIFT_CLOSURES ||--o| CASH_RECONCILIATIONS : "shift_id"
 
-    SHIFTS {
-        uuid id PK
-        uuid opened_by FK
-        uuid closed_by FK
-        numeric opening_cash
-        shift_status status
-        timestamptz opened_at
-        timestamptz closed_at
-    }
-
-    SHIFT_CLOSURES {
-        uuid id PK
-        uuid shift_id FK
-        uuid closed_by FK
-        numeric business_sales_total
-        numeric cash_total
-        numeric yape_total
-        numeric card_total
-        numeric card_fee_total
-        numeric customer_card_total
-        integer service_sessions_count
-        integer cancelled_sessions_count
-        integer orders_count
-        jsonb summary
-        text report_path
-        timestamptz created_at
-    }
-
-    SERVICE_SESSIONS {
-        uuid id PK
-        uuid service_point_id FK
-        uuid shift_id FK
-        uuid opened_by FK
-        uuid closed_by FK
-        session_status status
-        text cancellation_reason
-        timestamptz opened_at
-        timestamptz closed_at
-    }
-
-    ORDERS {
-        uuid id PK
-        uuid service_session_id FK
-        uuid created_by FK
-        order_status status
-        text notes
-        timestamptz created_at
-        timestamptz sent_at
-        timestamptz ready_at
-    }
-
-    ORDER_ITEMS {
-        uuid id PK
-        uuid order_id FK
-        uuid product_id FK
-        varchar product_name
-        numeric unit_price
-        integer quantity
-        text notes
-        order_item_status status
-        uuid cancelled_by FK
-        text cancellation_reason
-        timestamptz created_at
-    }
-
-    PAYMENTS {
-        uuid id PK
-        uuid service_session_id FK
-        uuid shift_id FK
-        uuid received_by FK
-        payment_method method
-        numeric business_amount
-        numeric fee_rate
-        numeric fee_amount
-        numeric customer_total
-        timestamptz paid_at
-    }
-
-    AUDIT_LOGS {
-        uuid id PK
-        uuid user_id FK
-        varchar action
-        varchar entity
-        uuid entity_id
-        jsonb details
-        timestamptz created_at
-    }
-
-    CATEGORIES ||--o{ PRODUCTS : contains
-
-    SERVICE_POINTS ||--o{ SERVICE_SESSIONS : has
-    SHIFTS ||--o{ SERVICE_SESSIONS : contains
-    SHIFTS ||--o| SHIFT_CLOSURES : closes
-
-    SERVICE_SESSIONS ||--o{ ORDERS : receives
-    ORDERS ||--|{ ORDER_ITEMS : contains
-    PRODUCTS ||--o{ ORDER_ITEMS : references
-
-    SERVICE_SESSIONS ||--o{ PAYMENTS : receives
-    SHIFTS ||--o{ PAYMENTS : contains
-
-    PROFILES ||--o{ SERVICE_SESSIONS : opens
-    PROFILES ||--o{ SERVICE_SESSIONS : closes
-    PROFILES ||--o{ SHIFTS : opens
-    PROFILES ||--o{ SHIFTS : closes
-    PROFILES ||--o{ SHIFT_CLOSURES : creates
-    PROFILES ||--o{ ORDERS : creates
-    PROFILES ||--o{ PAYMENTS : receives
-    PROFILES ||--o{ AUDIT_LOGS : generates
+    PROFILES ||--o{ SHIFTS : "opened_by / closed_by"
+    PROFILES ||--o{ SERVICE_SESSIONS : "opened_by / closed_by"
+    PROFILES ||--o{ ORDERS : "created_by"
+    PROFILES ||--o{ PAYMENTS : "received_by"
+    PROFILES ||--o{ SHIFT_EXPENSES : "recorded_by / voided_by"
+    PROFILES ||--o{ AUDIT_LOGS : "user_id"
 ```
 
----
+Las tablas de transferencia también referencian los puntos y sesiones de
+origen/destino. Esas relaciones se detallan en sus secciones.
 
-# 13. Entidad `profiles`
+## 4. Identidad y catálogo
 
-Representa la información interna del trabajador.
+### 4.1. `profiles`
 
-Supabase Auth almacenará credenciales.
+Perfil interno enlazado 1:1 con `auth.users`. El login visible usa `username` +
+contraseña. `auth_email` es un puente interno hacia Supabase Auth y nunca se
+presenta como credencial al trabajador.
 
-`profiles` almacenará datos propios de KUCHI'S.
-
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador relacionado con `auth.users`. |
-| `full_name` | VARCHAR | Nombre completo. |
-| `role` | ENUM | Rol del usuario. |
-| `is_active` | BOOLEAN | Indica si la cuenta está habilitada. |
-| `created_at` | TIMESTAMPTZ | Fecha de creación. |
-
-Roles iniciales:
-
-```text
-ADMIN
-CASHIER
-HALL
-GRILL
-```
-
----
-
-# 14. Entidad `categories`
-
-Agrupa productos.
-
-| Campo | Tipo | Función |
-|---|---|---|
-| `id` | UUID | Identificador. |
-| `name` | VARCHAR | Nombre visible. |
-| `slug` | VARCHAR | Identificador amigable. |
-| `sort_order` | INTEGER | Orden visual. |
-| `is_active` | BOOLEAN | Categoría habilitada o deshabilitada. |
-
-Ejemplos:
-
-```text
-Salchipapas
-Hamburguesas
-Combos
-Bebidas
-```
-
----
-
-# 15. Entidad `products`
-
-Representa cada producto de la carta.
-
-| Campo | Tipo | Función |
-|---|---|---|
-| `id` | UUID | Identificador. |
-| `category_id` | UUID FK | Categoría asociada. |
-| `name` | VARCHAR | Nombre. |
-| `description` | TEXT | Descripción. |
-| `price` | NUMERIC(10,2) | Precio actual. |
-| `image_path` | TEXT | Ruta en Supabase Storage. |
-| `is_available` | BOOLEAN | Disponible actualmente. |
-| `is_active` | BOOLEAN | Sigue formando parte del sistema. |
+| `id` | UUID PK/FK | `auth.users.id`. |
+| `full_name` | VARCHAR(120) | Obligatorio y no vacío. |
+| `username` | VARCHAR(60) | Único, minúsculas, sin espacios laterales. |
+| `auth_email` | VARCHAR(255) | Único, interno, minúsculas y sin espacios laterales. |
+| `role` | `user_role` | Rol vigente del trabajador. |
+| `is_active` | BOOLEAN | Habilitación de la cuenta. |
 | `created_at` | TIMESTAMPTZ | Creación. |
 | `updated_at` | TIMESTAMPTZ | Última modificación. |
 
-Diferencia:
+### 4.2. `categories`
 
-```text
-is_available = false
-```
-
-Producto temporalmente agotado.
-
-```text
-is_active = false
-```
-
-Producto retirado de la carta.
-
----
-
-# 16. Entidad `service_points`
-
-Representa cualquier punto físico de atención.
-
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador. |
-| `name` | VARCHAR | Mesa 1, Barra 2, etc. |
-| `type` | ENUM | `TABLE` o `BAR`. |
-| `sort_order` | INTEGER | Orden visual. |
-| `is_active` | BOOLEAN | Punto habilitado. |
+| `id` | UUID PK | Identificador. |
+| `name` | VARCHAR(80) | Nombre no vacío. |
+| `slug` | VARCHAR(100) | Único y no vacío. |
+| `sort_order` | INTEGER | Orden no negativo. |
+| `is_active` | BOOLEAN | Soft delete del catálogo. |
 
----
+### 4.3. `products`
 
-# 17. Entidad `shifts`
-
-Representa cada turno operativo.
-
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador. |
-| `opened_by` | UUID FK | Usuario que abrió. |
-| `closed_by` | UUID FK | Usuario que cerró. |
-| `opening_cash` | NUMERIC(10,2) | Efectivo inicial. |
-| `status` | ENUM | `OPEN` o `CLOSED`. |
-| `opened_at` | TIMESTAMPTZ | Apertura. |
-| `closed_at` | TIMESTAMPTZ | Cierre. |
-
----
-
-# 18. Entidad `shift_closures`
-
-Representa el resumen definitivo del turno.
-
-| Campo | Tipo | Función |
-|---|---|---|
-| `id` | UUID | Identificador. |
-| `shift_id` | UUID FK UNIQUE | Turno cerrado. |
-| `closed_by` | UUID FK | Usuario que generó el cierre. |
-| `business_sales_total` | NUMERIC(10,2) | Venta real de KUCHI'S. |
-| `cash_total` | NUMERIC(10,2) | Ventas pagadas en efectivo. |
-| `yape_total` | NUMERIC(10,2) | Ventas pagadas mediante Yape. |
-| `card_total` | NUMERIC(10,2) | Venta real pagada con tarjeta. |
-| `card_fee_total` | NUMERIC(10,2) | Total de recargos POS. |
-| `customer_card_total` | NUMERIC(10,2) | Total pagado por clientes con tarjeta incluyendo recargo. |
-| `service_sessions_count` | INTEGER | Número de atenciones terminadas. |
-| `cancelled_sessions_count` | INTEGER | Atenciones canceladas. |
-| `orders_count` | INTEGER | Número de comandas. |
-| `summary` | JSONB | Snapshot agregado del cierre. |
-| `report_path` | TEXT | Ruta futura de PDF/CSV generado. |
-| `created_at` | TIMESTAMPTZ | Momento del cierre. |
-
-Ejemplo de `summary`:
-
-```json
-{
-  "sales": {
-    "business_total": 1140.00,
-    "cash": 420.00,
-    "yape": 390.00,
-    "card": 330.00,
-    "card_fee": 16.50
-  },
-  "counts": {
-    "service_sessions": 52,
-    "cancelled_sessions": 2,
-    "orders": 79
-  }
-}
-```
-
-El JSON es solo un snapshot.
-
-Los pedidos detallados continúan en las tablas relacionales.
-
----
-
-# 19. Entidad `service_sessions`
-
-Representa una atención individual.
-
-| Campo | Tipo | Función |
-|---|---|---|
-| `id` | UUID | Identificador. |
-| `service_point_id` | UUID FK | Mesa/barra. |
-| `shift_id` | UUID FK | Turno asociado. |
-| `opened_by` | UUID FK | Usuario que abrió. |
-| `closed_by` | UUID FK | Usuario que cerró. |
-| `status` | ENUM | Estado. |
-| `cancellation_reason` | TEXT | Motivo si se cancela. |
-| `opened_at` | TIMESTAMPTZ | Apertura. |
-| `closed_at` | TIMESTAMPTZ | Cierre. |
-
-Estados:
-
-```text
-OPEN
-AWAITING_PAYMENT
-PAID
-CANCELLED
-```
-
----
-
-# 20. Entidad `orders`
-
-Representa una comanda.
-
-Una sesión puede generar múltiples comandas.
-
-| Campo | Tipo | Función |
-|---|---|---|
-| `id` | UUID | Identificador. |
-| `service_session_id` | UUID FK | Atención asociada. |
-| `created_by` | UUID FK | Usuario que la creó. |
-| `status` | ENUM | Estado de cocina. |
-| `notes` | TEXT | Observación general. |
+| `id` | UUID PK | Identificador. |
+| `category_id` | UUID FK | `categories.id`. |
+| `name` | VARCHAR(120) | Nombre no vacío. |
+| `description` | TEXT NULL | Descripción visible. |
+| `price` | NUMERIC(10,2) | Precio no negativo. |
+| `image_path` | TEXT NULL | Ruta de imagen. |
+| `is_available` | BOOLEAN | Disponibilidad operativa. |
+| `is_active` | BOOLEAN | Soft delete. |
+| `preparation_station` | `preparation_station` NULL | `KITCHEN`, `DRINKS` o NULL para productos no preparables por sí solos. |
+| `allows_additions` | BOOLEAN | Permite adicionales. |
 | `created_at` | TIMESTAMPTZ | Creación. |
-| `sent_at` | TIMESTAMPTZ | Envío a parrilla. |
-| `ready_at` | TIMESTAMPTZ | Momento en que quedó lista. |
+| `updated_at` | TIMESTAMPTZ | Última modificación. |
 
-Estados:
+## 5. Puntos, turnos y sesiones
+
+### 5.1. `service_points`
+
+Los 18 puntos canónicos son `Mesa 1`–`Mesa 7`, `B1`–`B4` y `LL1`–`LL7`.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `name` | VARCHAR(50) | Único y no vacío. |
+| `type` | `service_point_type` | `TABLE`, `BAR` o `TAKEAWAY`. |
+| `sort_order` | INTEGER | Único y no negativo. |
+| `is_active` | BOOLEAN | Punto habilitado; no representa ocupación. |
+
+### 5.2. `shifts`
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `opened_by` | UUID FK | `profiles.id`. |
+| `opened_by_role` | `user_role` | Snapshot del rol de apertura. |
+| `closed_by` | UUID FK NULL | Usuario de cierre. |
+| `closed_by_role` | `user_role` NULL | Snapshot del rol de cierre. |
+| `opening_cash` | NUMERIC(10,2) | Efectivo inicial no negativo. |
+| `status` | `shift_status` | `OPEN` o `CLOSED`. |
+| `opened_at` | TIMESTAMPTZ | Apertura. |
+| `closed_at` | TIMESTAMPTZ NULL | Cierre. |
+
+Existe como máximo un turno `OPEN`. Un turno cerrado exige usuario, snapshot de
+rol y timestamp de cierre coherentes.
+
+### 5.3. `service_sessions`
+
+Representa una atención concreta en un punto y dentro de un turno.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `service_point_id` | UUID FK | `service_points.id`; puede cambiar en una transferencia completa. |
+| `shift_id` | UUID FK | `shifts.id`. |
+| `opened_by` | UUID FK | `profiles.id`. |
+| `opened_by_role` | `user_role` | Snapshot del rol de apertura. |
+| `closed_by` | UUID FK NULL | Usuario que finalizó la sesión. |
+| `closed_by_role` | `user_role` NULL | Snapshot del rol de cierre. |
+| `status` | `session_status` | Estado de la atención. |
+| `cancellation_reason` | TEXT NULL | Obligatorio solo para `CANCELLED`. |
+| `opened_at` | TIMESTAMPTZ | Apertura. |
+| `closed_at` | TIMESTAMPTZ NULL | Cierre. |
+
+Reglas principales:
+
+- Solo puede existir una sesión activa (`OPEN` o `AWAITING_PAYMENT`) por punto.
+- Una sesión activa debe pertenecer a un turno `OPEN`.
+- `PAID` y `CANCELLED` requieren cierre, actor y snapshot de rol.
+- `(id, shift_id)` es único para sostener la consistencia compuesta de pagos.
+
+## 6. Comandas y preparación
+
+### 6.1. `orders`
+
+Cabecera de una comanda enviada dentro de una sesión. No posee estado de
+preparación ni `ready_at`; esos datos pertenecen a cada `order_item`.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `service_session_id` | UUID FK | Sesión donde se originó la comanda. |
+| `created_by` | UUID FK | `profiles.id`. |
+| `created_by_role` | `user_role` | Snapshot del rol al crearla. |
+| `sequence_number` | INTEGER | Positivo y único dentro de la sesión. |
+| `notes` | TEXT NULL | Nota general. |
+| `created_at` | TIMESTAMPTZ | Creación. |
+| `sent_at` | TIMESTAMPTZ | Envío obligatorio; inicia el tiempo operativo. |
+
+### 6.2. `order_items`
+
+Cada fila representa una configuración de producto. Configuraciones diferentes
+se mantienen en líneas distintas aunque correspondan al mismo producto.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `order_id` | UUID FK | Comanda original; nunca cambia por una transferencia. |
+| `current_service_session_id` | UUID FK | Sesión que actualmente posee, recibe y paga el ítem. |
+| `product_id` | UUID FK | Producto de referencia. |
+| `product_name` | VARCHAR(120) | Snapshot del nombre. |
+| `unit_price` | NUMERIC(10,2) | Snapshot del precio, no negativo. |
+| `quantity` | INTEGER | Cantidad positiva de esta configuración. |
+| `line_number` | INTEGER | Positivo y único dentro de la comanda. |
+| `preparation_station` | `preparation_station` | Snapshot `KITCHEN` o `DRINKS`. |
+| `notes` | TEXT NULL | Observación de la línea. |
+| `status` | `order_item_status` | Estado operativo actual. |
+| `created_at` | TIMESTAMPTZ | Creación. |
+| `updated_at` | TIMESTAMPTZ | Última modificación. |
+| `preparing_at` | TIMESTAMPTZ NULL | Inicio de preparación. |
+| `ready_at` | TIMESTAMPTZ NULL | Preparación terminada. |
+| `delivered_at` | TIMESTAMPTZ NULL | Entrega o recojo. |
+| `cancelled_at` | TIMESTAMPTZ NULL | Cancelación. |
+| `cancelled_by` | UUID FK NULL | `profiles.id`. |
+| `cancelled_by_role` | `user_role` NULL | Snapshot del rol que canceló. |
+| `cancellation_reason` | TEXT NULL | Razón obligatoria al cancelar. |
+| `cancelled_from_status` | `order_item_cancellation_origin_status` NULL | Estado inmediatamente anterior a la cancelación. |
+
+Flujo normal:
 
 ```text
-PENDING
-PREPARING
-READY
-CANCELLED
+PENDING → PREPARING → READY → DELIVERED
 ```
 
----
+`CANCELLED` conserva el estado de origen y los timestamps alcanzados. Las
+restricciones de PostgreSQL impiden combinaciones temporales incoherentes.
 
-# 21. Entidad `order_items`
+### 6.3. `order_item_additions`
 
-Representa cada producto dentro de una comanda.
+Snapshots inmutables de adicionales asociados a una configuración concreta.
 
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador. |
-| `order_id` | UUID FK | Comanda. |
-| `product_id` | UUID FK | Producto original. |
-| `product_name` | VARCHAR | Nombre congelado. |
-| `unit_price` | NUMERIC(10,2) | Precio congelado. |
-| `quantity` | INTEGER | Cantidad. |
-| `notes` | TEXT | Observación específica. |
-| `status` | ENUM | Estado del item. |
-| `cancelled_by` | UUID FK | Quién anuló. |
-| `cancellation_reason` | TEXT | Motivo. |
+| `id` | UUID PK | Identificador. |
+| `order_item_id` | UUID FK | `order_items.id`. |
+| `product_id` | UUID FK | Producto adicional de referencia. |
+| `addition_name` | VARCHAR(120) | Snapshot del nombre. |
+| `unit_price` | NUMERIC(10,2) | Snapshot del precio. |
+| `quantity_per_item` | INTEGER | Cantidad positiva aplicada a cada unidad del ítem padre. |
 | `created_at` | TIMESTAMPTZ | Creación. |
 
-Estados:
+La pareja `(order_item_id, product_id)` es única. Si solo algunas unidades
+reciben un adicional, deben representarse como configuraciones separadas.
 
-```text
-ACTIVE
-CANCELLED
-```
+## 7. Transferencias
 
----
+### 7.1. `service_session_transfers`
 
-# 22. Historial de precios
+Historial inmutable del movimiento completo de una sesión entre puntos. La
+misma `service_session` continúa y cambia su `service_point_id` actual.
 
-Nunca se recalculará una venta histórica usando:
-
-```text
-products.price
-```
-
-Se utilizará:
-
-```text
-order_items.unit_price
-```
-
-Ejemplo:
-
-```text
-Día 1
-Salchipapa = S/10
-
-Día 30
-Salchipapa = S/12
-```
-
-La venta del día 1 continuará:
-
-```text
-unit_price = 10
-```
-
----
-
-# 23. Entidad `payments`
-
-Representa los pagos.
-
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador. |
-| `service_session_id` | UUID FK | Atención pagada. |
-| `shift_id` | UUID FK | Turno. |
-| `received_by` | UUID FK | Usuario que registró. |
-| `method` | ENUM | Método de pago. |
-| `business_amount` | NUMERIC(10,2) | Dinero real de KUCHI'S. |
-| `fee_rate` | NUMERIC(5,4) | Tasa del POS. |
-| `fee_amount` | NUMERIC(10,2) | Recargo. |
-| `customer_total` | NUMERIC(10,2) | Total pagado por cliente. |
-| `paid_at` | TIMESTAMPTZ | Momento del pago. |
+| `id` | UUID PK | Identificador. |
+| `service_session_id` | UUID FK | Sesión transferida. |
+| `from_service_point_id` | UUID FK | Punto de origen. |
+| `to_service_point_id` | UUID FK | Punto de destino, distinto del origen. |
+| `from_service_point_name` | VARCHAR(120) | Snapshot del nombre de origen. |
+| `to_service_point_name` | VARCHAR(120) | Snapshot del nombre de destino. |
+| `transferred_by` | UUID FK | `profiles.id`. |
+| `transferred_by_role` | `user_role` | Snapshot del rol. |
+| `reason` | TEXT NULL | Motivo opcional no vacío. |
+| `transferred_at` | TIMESTAMPTZ | Momento de transferencia. |
 
-Métodos:
+### 7.2. `order_item_transfers`
 
-```text
-CASH
-YAPE
-CARD
-```
+Historial inmutable del movimiento total o parcial de una línea entre sesiones.
 
-Ejemplo tarjeta:
-
-```text
-business_amount = 40.00
-fee_rate        = 0.05
-fee_amount      = 2.00
-customer_total  = 42.00
-```
-
----
-
-# 24. Entidad `audit_logs`
-
-Registra operaciones sensibles.
-
-| Campo | Tipo | Función |
+| Campo | Tipo | Regla |
 |---|---|---|
-| `id` | UUID | Identificador. |
-| `user_id` | UUID FK | Usuario responsable. |
-| `action` | VARCHAR | Acción. |
-| `entity` | VARCHAR | Tipo de entidad. |
-| `entity_id` | UUID | Registro afectado. |
-| `details` | JSONB | Detalles. |
+| `id` | UUID PK | Identificador. |
+| `order_item_id` | UUID FK | Ítem transferido. |
+| `from_service_session_id` | UUID FK | Sesión de origen. |
+| `to_service_session_id` | UUID FK | Sesión de destino, distinta del origen. |
+| `from_service_point_id` | UUID FK | Punto de origen. |
+| `to_service_point_id` | UUID FK | Punto de destino. |
+| `from_service_point_name` | VARCHAR(120) | Snapshot del nombre de origen. |
+| `to_service_point_name` | VARCHAR(120) | Snapshot del nombre de destino. |
+| `quantity` | INTEGER | Cantidad positiva representada en la transferencia. |
+| `status_at_transfer` | `order_item_status` | Snapshot no `CANCELLED`. |
+| `transferred_by` | UUID FK | `profiles.id`. |
+| `transferred_by_role` | `user_role` | Snapshot del rol. |
+| `reason` | TEXT NULL | Motivo opcional no vacío. |
+| `transferred_at` | TIMESTAMPTZ | Momento de transferencia. |
+
+En una transferencia parcial, PostgreSQL divide la línea y copia sus
+adicionales. En ambos casos:
+
+```text
+order_id
+→ origen histórico de la comanda
+
+current_service_session_id
+→ propietario operativo y económico actual
+```
+
+## 8. Pagos, gastos, cierre y cuadre
+
+### 8.1. `payments`
+
+Pago confirmado e inmutable de una sesión. Existe como máximo uno por sesión.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `service_session_id` | UUID FK UNIQUE | `service_sessions.id`. |
+| `shift_id` | UUID FK | `shifts.id`; debe coincidir con el turno de la sesión. |
+| `received_by` | UUID FK | `profiles.id`. |
+| `received_by_role` | `user_role` | Snapshot del rol. |
+| `method` | `payment_method` | `CASH`, `YAPE` o `CARD`. |
+| `business_amount` | NUMERIC(10,2) | Venta del negocio, estrictamente positiva. |
+| `fee_rate` | NUMERIC(5,4) | `0.0500` para tarjeta; `0` en efectivo/Yape. |
+| `fee_amount` | NUMERIC(10,2) | `ROUND(business_amount * fee_rate, 2)`. |
+| `customer_total` | NUMERIC(10,2) | `business_amount + fee_amount`. |
+| `paid_at` | TIMESTAMPTZ | Confirmación. |
+
+El recargo de tarjeta forma parte del total cobrado al cliente, pero no de las
+ventas del negocio.
+
+### 8.2. `shift_expenses`
+
+Gastos operativos en efectivo de un turno. No reducen las ventas; reducen el
+efectivo físico esperado. Un error se anula con trazabilidad, nunca se borra.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `shift_id` | UUID FK | `shifts.id`. |
+| `recorded_by` | UUID FK | Usuario que registró. |
+| `recorded_by_role` | `user_role` | Snapshot del rol. |
+| `category` | `expense_category` | Categoría. |
+| `custom_category` | VARCHAR(80) NULL | Obligatoria solo para `OTHER`. |
+| `description` | TEXT | Descripción obligatoria. |
+| `amount` | NUMERIC(10,2) | Importe positivo. |
+| `recorded_at` | TIMESTAMPTZ | Registro. |
+| `voided_at` | TIMESTAMPTZ NULL | Anulación. |
+| `voided_by` | UUID FK NULL | Usuario que anuló. |
+| `voided_by_role` | `user_role` NULL | Snapshot del rol de anulación. |
+| `void_reason` | TEXT NULL | Motivo obligatorio si se anula. |
+
+### 8.3. `shift_closures`
+
+Snapshot ejecutivo 1:1 e inmutable generado al cerrar un turno. El detalle
+histórico permanece normalizado en las tablas operativas.
+
+| Grupo | Campos |
+|---|---|
+| Identidad | `id` UUID PK, `shift_id` UUID FK UNIQUE. |
+| Actor | `closed_by` UUID FK, `closed_by_role` `user_role`. |
+| Ventas | `business_sales_total`, `cash_total`, `yape_total`, `card_total`, `card_fee_total`, `customer_card_total` NUMERIC(10,2). |
+| Sesiones/comandas | `service_sessions_count`, `cancelled_sessions_count`, `orders_count` INTEGER. |
+| Ítems | `order_items_count`, `product_units_count`, `cancelled_order_items_count` INTEGER. |
+| Cancelaciones | `cancelled_pending_count`, `cancelled_preparing_count`, `cancelled_ready_count`, `cancelled_delivered_count` INTEGER. |
+| Transferencias | `service_session_transfers_count`, `order_item_transfers_count` INTEGER. |
+| Gastos | `operational_expenses_count` INTEGER, `operational_expenses_total` NUMERIC(10,2). |
+| Metadata | `closing_notes` TEXT NULL, `summary` JSONB, `report_path` TEXT NULL, `created_at` TIMESTAMPTZ. |
+
+Reglas financieras:
+
+```text
+business_sales_total = cash_total + yape_total + card_total
+customer_card_total  = card_total + card_fee_total
+```
+
+`business_sales_total` representa ventas/ingresos, no ganancia. Los gastos
+operativos permanecen separados.
+
+### 8.4. `cash_reconciliations`
+
+Cuadre 1:1 e inmutable de un turno ya cerrado. Su FK apunta a
+`shift_closures.shift_id`, por lo que no puede existir antes del cierre.
+
+| Grupo | Campos |
+|---|---|
+| Identidad | `id` UUID PK, `shift_id` UUID FK UNIQUE. |
+| Actor | `reconciled_by` UUID FK, `reconciled_by_role` `user_role`. |
+| Efectivo esperado | `opening_cash_snapshot`, `cash_sales_expected`, `cash_expenses_snapshot` NUMERIC(10,2). |
+| Efectivo observado | `counted_cash` NUMERIC(10,2). |
+| Efectivo calculado | `expected_cash`, `cash_difference` NUMERIC generados. |
+| Yape | `expected_yape`, `confirmed_yape`, `yape_difference` NUMERIC(10,2); diferencia generada. |
+| Tarjeta/POS | `expected_card_business`, `expected_card_fee`, `expected_card_customer_total`, `confirmed_card_customer_total`, `card_difference` NUMERIC(10,2); total esperado y diferencia generados. |
+| Metadata | `notes` TEXT NULL, `created_at`, `updated_at` TIMESTAMPTZ. |
+
+Fórmulas principales:
+
+```text
+expected_cash = opening_cash_snapshot
+              + cash_sales_expected
+              - cash_expenses_snapshot
+
+cash_difference = counted_cash - expected_cash
+
+expected_card_customer_total = expected_card_business + expected_card_fee
+card_difference = confirmed_card_customer_total
+                - expected_card_customer_total
+
+yape_difference = confirmed_yape - expected_yape
+```
+
+## 9. Auditoría
+
+### 9.1. `audit_logs`
+
+Registro contextual de operaciones relevantes.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID PK | Identificador. |
+| `user_id` | UUID FK NULL | Actor en `profiles`. |
+| `actor_role` | `user_role` NULL | Snapshot del rol. |
+| `action` | VARCHAR(80) | Acción no vacía. |
+| `entity` | VARCHAR(80) | Tipo de entidad no vacío. |
+| `entity_id` | UUID NULL | Entidad afectada. |
+| `shift_id` | UUID FK NULL | Contexto de turno. |
+| `service_session_id` | UUID FK NULL | Contexto de sesión. |
+| `details` | JSONB | Detalle estructurado. |
 | `created_at` | TIMESTAMPTZ | Momento. |
 
-Ejemplo:
+## 10. Enumeraciones actuales
 
-```json
-{
-  "old_price": 10.00,
-  "new_price": 12.00
-}
-```
-
----
-
-# 25. Enumeraciones
-
-## `user_role`
+### `user_role`
 
 ```text
 ADMIN
+MANAGER
+WAITER
 CASHIER
-HALL
-GRILL
+KITCHEN
 ```
 
-## `service_point_type`
+### `service_point_type`
 
 ```text
 TABLE
 BAR
+TAKEAWAY
 ```
 
-## `shift_status`
+### `preparation_station`
+
+```text
+KITCHEN
+DRINKS
+```
+
+`KITCHEN` en `user_role` y `KITCHEN` en `preparation_station` pertenecen a
+enumeraciones diferentes: uno es un rol y el otro una estación.
+
+### `shift_status`
 
 ```text
 OPEN
 CLOSED
 ```
 
-## `session_status`
+### `session_status`
 
 ```text
 OPEN
@@ -888,23 +468,26 @@ PAID
 CANCELLED
 ```
 
-## `order_status`
+### `order_item_status`
 
 ```text
 PENDING
 PREPARING
 READY
+DELIVERED
 CANCELLED
 ```
 
-## `order_item_status`
+### `order_item_cancellation_origin_status`
 
 ```text
-ACTIVE
-CANCELLED
+PENDING
+PREPARING
+READY
+DELIVERED
 ```
 
-## `payment_method`
+### `payment_method`
 
 ```text
 CASH
@@ -912,543 +495,58 @@ YAPE
 CARD
 ```
 
----
-
-# 26. Relaciones principales
-
-## Catálogo
+### `expense_category`
 
 ```text
+SUPPLIES
+CLEANING
+OTHER
+```
+
+No existe actualmente un enum `order_status`; la preparación se controla por
+`order_items.status`.
+
+## 11. Inventario final de entidades
+
+```text
+profiles
 categories
-    |
-    +----< products
-```
-
----
-
-## Atención
-
-```text
+products
 service_points
-    |
-    +----< service_sessions
-```
-
----
-
-## Turnos
-
-```text
 shifts
-   |
-   +----< service_sessions
-   |
-   +----< payments
-   |
-   +---- shift_closures
-```
-
----
-
-## Pedidos
-
-```text
 service_sessions
-    |
-    +----< orders
-             |
-             +----< order_items
-```
-
----
-
-## Pagos
-
-```text
-service_sessions
-    |
-    +----< payments
-```
-
----
-
-# 27. Regla: una sola sesión activa por punto
-
-No podrá existir:
-
-```text
-Mesa 1
-|
-+-- OPEN
-|
-+-- OPEN
-```
-
-Tampoco:
-
-```text
-Mesa 1
-|
-+-- AWAITING_PAYMENT
-|
-+-- OPEN
-```
-
-Mientras una sesión esté:
-
-```text
-OPEN
-```
-
-o:
-
-```text
-AWAITING_PAYMENT
-```
-
-el punto continúa ocupado.
-
----
-
-# 28. Regla: un solo turno abierto
-
-Durante el MVP solo existirá un turno operativo abierto simultáneamente.
-
-```text
-Turno A = OPEN
-Turno B = OPEN   <- inválido
-```
-
----
-
-# 29. Regla: un cierre por turno
-
-`shift_closures.shift_id` será único.
-
-```text
-Turno #40
-|
-+-- Cierre #1
-```
-
-No podrá existir un segundo cierre oficial del mismo turno.
-
----
-
-# 30. Regla: cierre histórico
-
-Una vez generado un cierre:
-
-```text
-shift_closures
-```
-
-debe considerarse un registro histórico.
-
-Las correcciones posteriores deberán quedar auditadas y no reemplazar silenciosamente el historial.
-
----
-
-# 31. Regla: cantidades
-
-```text
-order_items.quantity > 0
-```
-
----
-
-# 32. Regla: precios
-
-```text
-products.price >= 0
-
-order_items.unit_price >= 0
-
-payments.business_amount >= 0
-
-payments.fee_amount >= 0
-
-payments.customer_total >= 0
-```
-
----
-
-# 33. Regla: cancelaciones
-
-Para un item cancelado:
-
-```text
-status = CANCELLED
-```
-
-debe existir:
-
-- usuario responsable;
-- motivo;
-- trazabilidad.
-
-Para una sesión cancelada también debe existir motivo.
-
----
-
-# 34. Regla: pagos con tarjeta
-
-```text
-customer_total
-=
-business_amount
-+
-fee_amount
-```
-
-El recargo POS no incrementa:
-
-```text
-business_sales_total
-```
-
----
-
-# 35. Flujo completo de una atención
-
-```text
-Turno OPEN
-    |
-    v
-Mesa 1 libre
-    |
-    v
-Crear service_session
-    |
-    v
-Mesa 1 ocupada
-    |
-    v
-Crear order
-    |
-    v
-Crear order_items
-    |
-    v
-Parrilla
-PENDING
-    |
-    v
-PREPARING
-    |
-    v
-READY
-    |
-    v
-Cliente solicita cuenta
-    |
-    v
-AWAITING_PAYMENT
-    |
-    v
-Crear payment
-    |
-    v
-service_session = PAID
-    |
-    v
-closed_by
-closed_at
-    |
-    v
-Mesa 1 libre
-```
-
----
-
-# 36. Flujo de cierre de turno
-
-```text
-Caja presiona
-"Cerrar turno"
-       |
-       v
-Backend valida
-       |
-       +-- no hay sesiones activas pendientes
-       |
-       v
-Calcula ventas
-       |
-       +-- efectivo
-       +-- Yape
-       +-- tarjeta
-       +-- recargo POS
-       +-- atenciones
-       +-- cancelaciones
-       +-- comandas
-       |
-       v
-Cierra shifts
-       |
-       v
-Crea shift_closures
-       |
-       v
-Guarda summary JSONB
-       |
-       v
-Turno histórico disponible
-```
-
----
-
-# 37. Ejemplo de historial detallado
-
-```text
-16/08/2026
-Turno #24
-
-Venta KUCHI'S: S/1,140
-Atenciones: 52
-Comandas: 79
-
-Mesa 1
-|
-+-- Atención #301
-|   18:02 - 18:47
-|   |
-|   +-- Comanda #700
-|       +-- Salchipapa x1
-|       +-- Chicha x2
-|   |
-|   +-- Pago Yape
-|
-+-- Atención #318
-|   19:10 - 19:55
-|   |
-|   +-- Comanda #744
-|       +-- Hamburguesa x2
-|   |
-|   +-- Pago Efectivo
-|
-+-- Atención #336
-|   20:16 - 20:59
-|
-+-- Atención #351
-    21:24 - 22:02
-```
-
-Este historial no requiere duplicar la información.
-
-Se reconstruye mediante relaciones.
-
----
-
-# 38. Posible uso futuro para inventario
-
-Aunque inventario NO forma parte del MVP, el historial permite posteriormente consultar:
-
-```text
-¿Cuántas hamburguesas se vendieron hoy?
-
-¿Cuántas salchipapas se vendieron este mes?
-
-¿Qué producto se vende más los sábados?
-
-¿Qué bebida se vende más por turno?
-```
-
-Esto será posible utilizando:
-
-```text
-order_items
-```
-
-sin modificar el historial actual.
-
----
-
-# 39. Soft delete
-
-Los registros históricos importantes no deben borrarse físicamente.
-
-Principalmente:
-
-```text
-products
-service_points
-profiles
-```
-
-utilizarán estados como:
-
-```text
-is_active = false
-```
-
-para conservar las relaciones históricas.
-
----
-
-# 40. Archivos de reporte
-
-En una fase futura el sistema podrá generar:
-
-```text
-PDF
-CSV
-```
-
-por cada cierre.
-
-La ruta podrá guardarse en:
-
-```text
-shift_closures.report_path
-```
-
-Ejemplo:
-
-```text
-shift-reports/
-2026/
-08/
-shift-2026-08-16.pdf
-```
-
-La fuente oficial seguirá siendo PostgreSQL.
-
-El archivo será solo una representación exportable.
-
----
-
-# 41. Entidades finales del ERD v2
-
-```text
-profiles
-
-categories
-products
-
-service_points
-service_sessions
-
 orders
 order_items
-
+order_item_additions
+service_session_transfers
+order_item_transfers
 payments
-
-shifts
+shift_expenses
 shift_closures
-
+cash_reconciliations
 audit_logs
 ```
 
-Total:
+Total: **16 tablas propias de KUCHI'S**.
 
-```text
-11 tablas propias de KUCHI'S
-```
+## 12. Restricciones históricas y de integridad clave
 
-Además:
+- Un solo turno `OPEN`.
+- Una sola sesión activa por punto.
+- Una comanda se numera secuencialmente dentro de su sesión.
+- Una línea se numera secuencialmente dentro de su comanda.
+- Un solo adicional del mismo producto por configuración de ítem.
+- Un solo pago por sesión y siempre mayor que cero.
+- Un solo cierre y un solo cuadre por turno.
+- Pagos, cierres, cuadre y transferencias son historia inmutable para la
+  aplicación.
+- Gastos: inserción y anulación explícita; nunca borrado físico.
+- Foreign keys operativas usan `ON DELETE RESTRICT` para proteger historia.
+- Los snapshots de rol preservan el rol existente al momento de cada acción.
 
-```text
-auth.users
-```
+## 13. Alineación backend/PostgreSQL
 
-será administrada por Supabase Auth.
-
----
-
-# 42. Dependencias principales
-
-```text
-auth.users
-    |
-    v
-profiles
-
-
-categories
-    |
-    v
-products
-
-
-service_points
-    |
-    v
-service_sessions
-    |
-    +------> orders
-    |          |
-    |          v
-    |      order_items
-    |
-    +------> payments
-
-
-shifts
-    |
-    +------> service_sessions
-    |
-    +------> payments
-    |
-    +------> shift_closures
-```
-
----
-
-# 43. Próximo paso
-
-Con este ERD v2 aprobado se debe actualizar la primera migración física.
-
-Archivo objetivo:
-
-```text
-supabase/migrations/<timestamp>_initial_schema.sql
-```
-
-El esquema deberá incluir:
-
-1. enums;
-2. tablas;
-3. claves primarias;
-4. claves foráneas;
-5. restricciones;
-6. índices;
-7. una sesión activa por punto;
-8. un turno abierto;
-9. un cierre por turno;
-10. `closed_by` en `service_sessions`;
-11. `shift_closures`;
-12. triggers;
-13. RLS;
-14. permisos iniciales.
-
-Después:
-
-```text
-Crear proyecto Supabase
-        |
-        v
-Configurar CLI
-        |
-        v
-Vincular proyecto
-        |
-        v
-Aplicar migración
-```
-
----
-
-# 44. Estado final
-
-```text
-ERD VERSION: 2.0
-STATUS: FINAL PARA IMPLEMENTACIÓN
-DATABASE: PostgreSQL / Supabase
-CLIENT APP: soportada
-LOGISTICS APP: soportada
-HISTORICAL DATA: soportada
-DETAILED SHIFT HISTORY: soportada
-MULTIPLE SERVICE POINT ROTATIONS: soportadas
-FUTURE INVENTORY ANALYTICS: preparada
-```
+La revisión no encontró divergencias estructurales entre las tablas y enums de
+PostgreSQL, `packages/shared/database.types.ts` y los repositories actuales de
+Node. PostgreSQL continúa siendo la autoridad para mutaciones transaccionales y
+para las restricciones de integridad descritas aquí.
