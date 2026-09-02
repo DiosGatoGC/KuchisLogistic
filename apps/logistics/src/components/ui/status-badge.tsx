@@ -1,14 +1,21 @@
-export type OperationalStatus = "idle" | "available" | "open" | "payment";
+export type OperationalStatus =
+  | "idle"
+  | "available"
+  | "open"
+  | "payment"
+  | "inactive";
 
 const labels: Record<OperationalStatus, string> = {
   idle: "Sin sincronizar",
   available: "Libre",
   open: "Abierta",
   payment: "Pendiente de pago",
+  inactive: "Inactiva",
 };
 
 const compactLabels: Partial<Record<OperationalStatus, string>> = {
   payment: "Pend. pago",
+  inactive: "Inactiva",
 };
 
 export function StatusBadge({ status }: { status: OperationalStatus }) {

@@ -29,6 +29,7 @@ interface AuthContextValue {
   status: AuthStatus;
   user: AuthenticatedUser | null;
   configurationError: string | null;
+  getAccessToken: () => Promise<string>;
   login: (input: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -167,6 +168,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const getAccessToken = useCallback(async () => {
+    const client = getSupabaseBrowserClient();
+    if (!client) {
+      throw new ApiError(
+        "configuration",
+        "Falta configurar Supabase para consultar Logistics.",
+      );
+    }
+
+    const { data, error } = await client.auth.getSession();
+    if (error || !data.session?.access_token) {
+      clearAuth();
+      throw new ApiError(
+        "unauthorized",
+        "Tu sesión ya no es válida. Inicia sesión nuevamente.",
+        401,
+        "AUTH_REQUIRED",
+      );
+    }
+
+    return data.session.access_token;
+  }, [clearAuth]);
+
   const logout = useCallback(async () => {
     const client = getSupabaseBrowserClient();
     try {
@@ -177,8 +201,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuth]);
 
   const value = useMemo(
-    () => ({ status, user, configurationError, login, logout }),
-    [configurationError, login, logout, status, user],
+    () => ({ status, user, configurationError, getAccessToken, login, logout }),
+    [configurationError, getAccessToken, login, logout, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
