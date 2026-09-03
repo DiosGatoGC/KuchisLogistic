@@ -37,7 +37,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       "/usuarios": "Usuarios",
     };
 
-    return routeTitles[pathname] ?? "Operación";
+    return pathname.startsWith("/comandar/")
+      ? "Comandar"
+      : routeTitles[pathname] ?? "Operación";
   }, [pathname]);
 
   const handleLogout = async () => {
