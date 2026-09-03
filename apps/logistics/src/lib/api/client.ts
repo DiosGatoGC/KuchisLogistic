@@ -20,6 +20,7 @@ interface ApiErrorBody {
 interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   accessToken?: string;
   body?: unknown;
+  expectedStatus?: number;
 }
 
 function apiBaseUrl() {
@@ -68,7 +69,7 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(
   path: string,
-  { accessToken, body, headers, ...init }: ApiRequestOptions = {},
+  { accessToken, body, expectedStatus, headers, ...init }: ApiRequestOptions = {},
 ): Promise<T> {
   let response: Response;
 
@@ -100,6 +101,14 @@ export async function apiRequest<T>(
       errorBody?.error?.message ?? "La solicitud no pudo completarse.",
       response.status,
       errorBody?.error?.code,
+    );
+  }
+
+  if (expectedStatus !== undefined && response.status !== expectedStatus) {
+    throw new ApiError(
+      "unexpected",
+      "Logistics respondió con un resultado inesperado.",
+      response.status,
     );
   }
 

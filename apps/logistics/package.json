@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:tables": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/tables/tables-model.test.ts"
+    "test:tables": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/tables/tables-model.test.ts",
+    "test:ordering": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/ordering/ordering-model.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

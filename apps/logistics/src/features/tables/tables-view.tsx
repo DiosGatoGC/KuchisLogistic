@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import { CompactToolbarControls } from "@/components/layout/compact-toolbar-controls";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
+import {
+  consumeOrderCreatedFeedback,
+  orderCreatedMessage,
+} from "@/lib/order-created-feedback";
 import { can } from "@/lib/permissions/capabilities";
 
 import {
@@ -199,6 +204,7 @@ function TakeawayRoom({
 }
 
 export function TablesView() {
+  const router = useRouter();
   const { user, getAccessToken, logout } = useAuth();
   const [mode, setMode] = useState<ServiceMode>("salon");
   const [points, setPoints] = useState<ServicePointStatus[] | null>(null);
@@ -219,6 +225,7 @@ export function TablesView() {
 
   const canOperate = can(user, "tables.operate");
   const canRelease = can(user, "tables.release");
+  const canCreateOrder = can(user, "orders.create");
 
   const handleUnauthorized = useCallback(
     async (error: unknown) => {
@@ -257,6 +264,16 @@ export function TablesView() {
     },
     [getAccessToken, handleUnauthorized],
   );
+
+  useEffect(() => {
+    const feedback = window.setTimeout(() => {
+      const sequenceNumber = consumeOrderCreatedFeedback();
+      if (sequenceNumber !== null) {
+        setNotice(orderCreatedMessage(sequenceNumber));
+      }
+    }, 0);
+    return () => window.clearTimeout(feedback);
+  }, []);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void refreshStatus(), 0);
@@ -623,6 +640,14 @@ export function TablesView() {
           onClose={closeDialog}
           footer={
             <>
+              {detail?.status === "OPEN" && canCreateOrder && (
+                <Button
+                  type="button"
+                  onClick={() => router.push(`/comandar/${detail.id}`)}
+                >
+                  Comandar
+                </Button>
+              )}
               {detail &&
                 canRelease &&
                 (detail.status === "OPEN" ||
@@ -631,7 +656,7 @@ export function TablesView() {
                   Liberar atención
                 </Button>
               )}
-              <Button type="button" onClick={closeDialog}>Volver</Button>
+              <Button type="button" variant="ghost" onClick={closeDialog}>Volver</Button>
             </>
           }
         >
