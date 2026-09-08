@@ -18,10 +18,10 @@ Completed and certified:
 2. Mesas + Service Sessions — DONE
 3. Comandar — DONE
 4. Pedidos + Cocina + Bebidas — DONE
+5. Estado de mesas + corrections/transfers/cancellations — DONE (Production smoke certified)
 
 Pending:
 
-5. Estado de mesas + corrections/transfers/cancellations
 6. Checkout/Cobro
 7. Actualizar carta
 8. Turnos/Gastos
@@ -32,7 +32,7 @@ Pending:
 13. PWA/mobile/tablet
 14. Frontend Production Readiness
 
-Current next objective: **Objective 5**. Do not begin Objective 6 as part of Objective 5.
+Current next objective: **Objective 6 — Checkout/Cobro**. Do not begin it automatically as part of the Objective 5 closeout.
 
 ## Certified Objective 4 behavior worth preserving
 

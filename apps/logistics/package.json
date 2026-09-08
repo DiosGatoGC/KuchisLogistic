@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:tables": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/tables/tables-model.test.ts",
     "test:ordering": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/ordering/ordering-model.test.ts",
-    "test:preparation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/preparation/preparation-model.test.ts"
+    "test:preparation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/preparation/preparation-model.test.ts",
+    "test:table-operations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/table-operations/table-operations-model.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",
