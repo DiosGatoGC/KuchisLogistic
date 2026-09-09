@@ -19,11 +19,11 @@ Completed and certified:
 3. Comandar — DONE
 4. Pedidos + Cocina + Bebidas — DONE
 5. Estado de mesas + corrections/transfers/cancellations — DONE (Production smoke certified)
+6. Checkout/Cobro — DONE (Production smoke certified)
+7. Actualizar carta — DONE (Production smoke certified)
 
 Pending:
 
-6. Checkout/Cobro
-7. Actualizar carta
 8. Turnos/Gastos
 9. Cierre/cuadre
 10. Historial
@@ -32,7 +32,9 @@ Pending:
 13. PWA/mobile/tablet
 14. Frontend Production Readiness
 
-Current next objective: **Objective 6 — Checkout/Cobro**. Do not begin it automatically as part of the Objective 5 closeout.
+Current next objective: **Objective 8 — Turnos/Gastos**. Do not begin it automatically as part of the Objectives 6 and 7 closeout.
+
+The shared protected shell now provides a human-smoke-verified in-app Back control for installed/fullscreen PWA use: it is hidden on `/home`, uses marked same-app history when available, falls back safely to `/home` on direct entry, and remains suppressed on the terminal paid Checkout screen.
 
 ## Certified Objective 4 behavior worth preserving
 

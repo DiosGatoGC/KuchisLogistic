@@ -11,7 +11,10 @@
     "test:tables": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/tables/tables-model.test.ts",
     "test:ordering": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/ordering/ordering-model.test.ts",
     "test:preparation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/preparation/preparation-model.test.ts",
-    "test:table-operations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/table-operations/table-operations-model.test.ts"
+    "test:table-operations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/table-operations/table-operations-model.test.ts",
+    "test:checkout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/checkout/checkout-model.test.ts",
+    "test:catalog-availability": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/catalog-availability/catalog-availability-model.test.ts",
+    "test:navigation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/components/layout/protected-navigation-model.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",
