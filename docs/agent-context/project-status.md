@@ -21,18 +21,18 @@ Completed and certified:
 5. Estado de mesas + corrections/transfers/cancellations — DONE (Production smoke certified)
 6. Checkout/Cobro — DONE (Production smoke certified)
 7. Actualizar carta — DONE (Production smoke certified)
+8. Turnos/Gastos — DONE (Production smoke certified)
+9. Cierre/cuadre — DONE (Production smoke certified)
 
 Pending:
 
-8. Turnos/Gastos
-9. Cierre/cuadre
 10. Historial
 11. Usuarios
 12. Realtime hardening
 13. PWA/mobile/tablet
 14. Frontend Production Readiness
 
-Current next objective: **Objective 8 — Turnos/Gastos**. Do not begin it automatically as part of the Objectives 6 and 7 closeout.
+Current next objective: **Objective 10 — Historial**. Do not begin it automatically as part of the Objectives 8 and 9 closeout.
 
 The shared protected shell now provides a human-smoke-verified in-app Back control for installed/fullscreen PWA use: it is hidden on `/home`, uses marked same-app history when available, falls back safely to `/home` on direct entry, and remains suppressed on the terminal paid Checkout screen.
 

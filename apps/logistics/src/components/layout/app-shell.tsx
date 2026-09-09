@@ -76,6 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       "/pedidos": "Pedidos",
       "/carta": "Actualizar carta",
       "/turnos/apertura": "Apertura de turno",
+      "/turnos/gastos": "Gastos del turno",
       "/turnos/cierre": "Cierre de turno",
       "/caja/cuadre": "Cuadre de caja",
       "/historial": "Historial",

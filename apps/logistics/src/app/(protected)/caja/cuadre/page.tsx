@@ -1,10 +1,15 @@
 import { CapabilityGuard } from "@/features/auth/auth-guards";
-import { UpcomingModule } from "@/features/modules/upcoming-module";
+import { ReconciliationView } from "@/features/shifts/reconciliation-view";
 
-export default function ReconciliationPage() {
+export default async function ReconciliationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ shiftId?: string | string[] }>;
+}) {
+  const { shiftId } = await searchParams;
   return (
     <CapabilityGuard anyOf={["cash.reconcile"]}>
-      <UpcomingModule title="Cuadre de caja" description="La conciliación de caja se habilitará en un objetivo posterior." icon="cash" />
+      <ReconciliationView shiftId={typeof shiftId === "string" ? shiftId : null} />
     </CapabilityGuard>
   );
 }
