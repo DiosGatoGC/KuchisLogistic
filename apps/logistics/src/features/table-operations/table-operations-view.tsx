@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -26,6 +27,7 @@ import {
 import { getServicePointStatus } from "@/features/tables/tables-api";
 import type { ServicePointStatus } from "@/features/tables/tables-types";
 import { ApiError } from "@/lib/api/client";
+import { can } from "@/lib/permissions/capabilities";
 
 import {
   cancelOrderItem,
@@ -254,6 +256,7 @@ function SessionOrders({
 export function TableOperationsView() {
   const { user, getAccessToken, logout } = useAuth();
   const permissions = tableOperationPermissions(user?.capabilities ?? []);
+  const canCheckout = can(user, "tables.operate");
   const [mode, setMode] = useState<ServiceMode>("salon");
   const [points, setPoints] = useState<ServicePointStatus[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -704,6 +707,11 @@ export function TableOperationsView() {
           onClose={closeDialog}
           footer={
             <>
+              {snapshot && canCheckout && (
+                <Link className="button button--primary" href={`/cobrar/${snapshot.session.id}`}>
+                  Ver cuenta / Cobrar
+                </Link>
+              )}
               <Button type="button" variant="secondary" loading={isDetailLoading} onClick={() => void refreshDialog()}>
                 Actualizar
               </Button>

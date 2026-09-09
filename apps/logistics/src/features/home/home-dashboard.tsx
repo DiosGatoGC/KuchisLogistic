@@ -47,7 +47,7 @@ const actions: readonly HomeAction[] = [
     icon: "book-open",
     title: "Actualizar carta",
     description: "Disponibilidad de productos",
-    anyOf: ["catalog.availability"],
+    anyOf: ["tables.view"],
   },
   {
     href: "/turnos/apertura",

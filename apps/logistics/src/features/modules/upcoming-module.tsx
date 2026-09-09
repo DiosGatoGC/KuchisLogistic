@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { Icon, type IconName } from "@/components/ui/icon";
 
 export function UpcomingModule({
@@ -22,10 +20,6 @@ export function UpcomingModule({
         <p className="eyebrow">Próximamente</p>
         <h1>{title}</h1>
         <p>{description}</p>
-        <Link className="back-link" href="/home">
-          <Icon name="arrow-left" />
-          Volver al inicio
-        </Link>
       </section>
     </div>
   );
