@@ -57,6 +57,13 @@ const actions: readonly HomeAction[] = [
     anyOf: ["shift.open"],
   },
   {
+    href: "/turnos/gastos",
+    icon: "cash",
+    title: "Gastos del turno",
+    description: "Registrar egresos operativos",
+    anyOf: ["expenses.view"],
+  },
+  {
     href: "/turnos/cierre",
     icon: "clock-out",
     title: "Cierre de turno",
