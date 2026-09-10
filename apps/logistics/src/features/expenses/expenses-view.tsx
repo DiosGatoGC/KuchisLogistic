@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -11,6 +12,7 @@ import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import { executeExpenseMutation } from "./expense-mutations";
@@ -82,6 +84,13 @@ export function ExpensesView() {
       if (requestId === requestRef.current) setIsLoading(false);
     }
   }, [getAccessToken, handleUnauthorized]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.shift, LOGISTICS_REALTIME_TOPICS.finance],
+    onInvalidate: () => {
+      if (busyKey === null) return loadExpenses();
+    },
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadExpenses(), 0);

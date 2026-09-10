@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CompactToolbarControls } from "@/components/layout/compact-toolbar-controls";
@@ -9,6 +10,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import {
@@ -153,6 +155,13 @@ export function CatalogAvailabilityView() {
     setNotice,
     setUnresolvedIds,
   ]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.catalog],
+    onInvalidate: () => {
+      if (busyIds.size === 0) return loadCatalog();
+    },
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadCatalog(), 0);

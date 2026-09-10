@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="KUCHI'S Logistics">
+  <rect width="512" height="512" rx="144" fill="#faf7f1"/>
+  <rect x="72" y="72" width="368" height="368" rx="116" fill="#f66b0e"/>
+  <circle cx="371" cy="141" r="18" fill="#ffd09e"/>
+  <circle cx="405" cy="405" r="83" fill="none" stroke="#ffffff" stroke-opacity=".24" stroke-width="34"/>
+  <rect x="151" y="130" width="56" height="252" rx="28" fill="#fff"/>
+  <path d="m185 236 118-106 38 43-91 82 98 83-37 44-126-108Z" fill="#fff"/>
+</svg>

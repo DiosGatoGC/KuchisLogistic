@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import {
   useCallback,
@@ -18,6 +19,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import type { Order, OrderItem, OrderItemStatus } from "@/features/ordering/ordering-types";
 import {
   arrangeDiningPoints,
@@ -402,6 +404,15 @@ export function TableOperationsView() {
       setIsDetailLoading(false);
     }
   }, [adoptSnapshot, dialog, getAccessToken, handleUnauthorized, returnToDetail]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.tables],
+    onInvalidate: async () => {
+      if (isMutating) return;
+      await loadStatus(true);
+      if (dialog) await refreshDialog();
+    },
+  });
 
   const sessionTransferPoints = useMemo(
     () => snapshot

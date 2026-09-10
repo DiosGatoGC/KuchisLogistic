@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import {
   useCallback,
   useEffect,
@@ -17,6 +18,7 @@ import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 import {
   consumeOrderCreatedFeedback,
@@ -264,6 +266,11 @@ export function TablesView() {
     },
     [getAccessToken, handleUnauthorized],
   );
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.tables],
+    onInvalidate: () => refreshStatus({ background: true }),
+  });
 
   useEffect(() => {
     const feedback = window.setTimeout(() => {

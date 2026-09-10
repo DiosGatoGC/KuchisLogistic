@@ -45,6 +45,7 @@ html {
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background:
     radial-gradient(circle at 7% 18%, rgba(246, 107, 14, 0.055), transparent 24rem),
@@ -81,6 +82,8 @@ svg {
 .page-shell {
   width: min(100% - 40px, 1240px);
   margin-inline: auto;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .eyebrow {
@@ -384,7 +387,7 @@ svg {
 .select-field__option {
   display: flex;
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -536,9 +539,14 @@ svg {
   position: relative;
   display: grid;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   place-items: center;
-  padding: 46px 28px;
+  padding:
+    max(46px, env(safe-area-inset-top))
+    max(28px, env(safe-area-inset-right))
+    max(46px, env(safe-area-inset-bottom))
+    max(28px, env(safe-area-inset-left));
   background:
     linear-gradient(112deg, rgba(255, 244, 231, 0.86) 0 50%, rgba(250, 247, 241, 0.65) 50%),
     var(--background);
@@ -719,7 +727,8 @@ svg {
   position: sticky;
   z-index: 40;
   top: 0;
-  height: var(--header-height);
+  height: calc(var(--header-height) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   background: color-mix(in srgb, var(--background) 93%, transparent);
   backdrop-filter: blur(18px);
@@ -902,7 +911,34 @@ svg {
 }
 
 .app-main {
-  padding-block: clamp(28px, 5vh, 54px) 48px;
+  padding-block: clamp(28px, 5vh, 54px) calc(48px + env(safe-area-inset-bottom));
+}
+
+.network-status {
+  position: fixed;
+  z-index: 180;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  max-width: min(360px, calc(100vw - 24px));
+  align-items: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border));
+  border-radius: 14px;
+  padding: 10px 13px;
+  background: var(--warning-soft);
+  box-shadow: var(--shadow-strong);
+  color: var(--warning);
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.network-status > span {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* Home */
@@ -1441,7 +1477,11 @@ svg {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
   background: rgba(48, 35, 25, 0.42);
   backdrop-filter: blur(4px);
 }
@@ -2406,7 +2446,11 @@ svg {
   display: grid;
   place-items: center;
   align-content: center;
-  padding: 34px;
+  padding:
+    max(34px, env(safe-area-inset-top))
+    max(34px, env(safe-area-inset-right))
+    max(34px, env(safe-area-inset-bottom))
+    max(34px, env(safe-area-inset-left));
   background:
     radial-gradient(circle at 50% 42%, rgba(246, 107, 14, 0.11), transparent 13rem),
     var(--background);
@@ -2494,7 +2538,11 @@ svg {
   .login-page {
     align-items: start;
     overflow: auto;
-    padding: 24px 16px 34px;
+    padding:
+      max(24px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(34px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
   }
 
   .login-layout {
@@ -2593,7 +2641,8 @@ svg {
     position: relative;
     z-index: 60;
     display: block;
-    height: var(--compact-header-height);
+    height: calc(var(--compact-header-height) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
     border-bottom: 1px solid var(--border);
     background: color-mix(in srgb, var(--background) 96%, transparent);
     backdrop-filter: blur(18px);
@@ -2605,7 +2654,8 @@ svg {
     height: 100%;
     align-items: center;
     gap: 10px;
-    padding-inline: 7px;
+    padding-left: max(7px, env(safe-area-inset-left));
+    padding-right: max(7px, env(safe-area-inset-right));
   }
 
   .compact-header .brand {
@@ -2652,7 +2702,7 @@ svg {
   .compact-toolbar-controls {
     position: fixed;
     z-index: 65;
-    top: 5px;
+    top: max(5px, env(safe-area-inset-top));
     right: 61px;
     display: block;
   }
@@ -2672,7 +2722,7 @@ svg {
   }
 
   .app-main {
-    height: calc(100dvh - var(--compact-header-height));
+    height: calc(100dvh - var(--compact-header-height) - env(safe-area-inset-top));
     overflow-y: auto;
     padding-block: 5px;
   }
@@ -2680,6 +2730,8 @@ svg {
   .app-main > .page-shell {
     width: calc(100% - 10px);
     height: 100%;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   .home-page {
@@ -2745,7 +2797,7 @@ svg {
   .ordering-blocked {
     position: fixed;
     z-index: 64;
-    top: calc(var(--compact-header-height) + 5px);
+    top: calc(var(--compact-header-height) + env(safe-area-inset-top) + 5px);
     left: 7px;
     max-width: min(500px, calc(100vw - 76px));
     border-radius: 11px;
@@ -2910,7 +2962,7 @@ svg {
   .tables-notice {
     position: fixed;
     z-index: 64;
-    top: calc(var(--compact-header-height) + 5px);
+    top: calc(var(--compact-header-height) + env(safe-area-inset-top) + 5px);
     right: 8px;
     max-width: min(420px, calc(100vw - 16px));
     border-radius: 11px;
@@ -3023,7 +3075,11 @@ svg {
 
   .dialog-backdrop {
     align-items: center;
-    padding: 7px;
+    padding:
+      max(7px, env(safe-area-inset-top))
+      max(7px, env(safe-area-inset-right))
+      max(7px, env(safe-area-inset-bottom))
+      max(7px, env(safe-area-inset-left));
   }
 
   .operational-dialog {
@@ -3060,7 +3116,7 @@ svg {
   }
 
   .operational-dialog__footer .button {
-    min-height: 42px;
+    min-height: 44px;
   }
 
   .session-detail {
@@ -3084,6 +3140,19 @@ svg {
     min-height: 64px;
     max-height: 74px;
     resize: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .history-shift-card__activity .button,
+  .user-filter .button,
+  .user-row__actions .button {
+    min-height: 44px;
+  }
+
+  .quantity-control button,
+  .draft-line__edit {
+    min-height: 40px;
   }
 }
 
@@ -3491,7 +3560,7 @@ svg {
   .preparation-notice {
     position: fixed;
     z-index: 64;
-    top: calc(var(--compact-header-height) + 5px);
+    top: calc(var(--compact-header-height) + env(safe-area-inset-top) + 5px);
     right: 8px;
     max-width: min(470px, calc(100vw - 16px));
     border-radius: 11px;
@@ -3771,7 +3840,7 @@ svg {
   .table-operations-page .tables-notice {
     position: fixed;
     z-index: 64;
-    top: calc(var(--compact-header-height) + 5px);
+    top: calc(var(--compact-header-height) + env(safe-area-inset-top) + 5px);
     right: 8px;
     max-width: min(440px, calc(100vw - 16px));
   }
