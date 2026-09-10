@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
+import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
@@ -31,6 +32,10 @@ import { formatOperationalDate, formatOperationalMoney, USER_ROLE_LABELS } from 
 
 const initialForm = { category: "SUPPLIES" as ExpenseCategory, customCategory: "", description: "", amount: "" };
 const voidConflictCodes = new Set(["SHIFT_EXPENSE_ALREADY_VOIDED", "SHIFT_EXPENSE_CHANGED", "EXPENSE_SHIFT_CLOSED"]);
+const expenseCategoryOptions = Object.entries(EXPENSE_CATEGORY_LABELS).map(([value, label]) => ({
+  value: value as ExpenseCategory,
+  label,
+}));
 
 export function ExpensesView() {
   const { user, getAccessToken, logout } = useAuth();
@@ -258,12 +263,14 @@ export function ExpensesView() {
             {permissions.canManage && (
               <Surface className="expense-create-card">
                 <div><p className="eyebrow">Nuevo egreso</p><h2>Registrar gasto</h2></div>
-                <label className="field">
-                  <span className="field__label">Categoría</span>
-                  <select className="input" value={form.category} disabled={busyKey === "create" || blockedKeys.has("create")} onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value as ExpenseCategory, customCategory: "" }))}>
-                    {Object.entries(EXPENSE_CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </label>
+                <SelectField
+                  id="expense-category"
+                  label="Categoría"
+                  value={form.category}
+                  options={expenseCategoryOptions}
+                  disabled={busyKey === "create" || blockedKeys.has("create")}
+                  onChange={(category) => setForm((previous) => ({ ...previous, category, customCategory: "" }))}
+                />
                 {form.category === "OTHER" && <Input id="expense-custom-category" name="customCategory" label="Categoría personalizada" value={form.customCategory} maxLength={80} error={formErrors.customCategory} disabled={busyKey === "create" || blockedKeys.has("create")} onChange={(event) => setForm((previous) => ({ ...previous, customCategory: event.target.value }))} />}
                 <Input id="expense-description" name="description" label="Descripción" value={form.description} maxLength={300} error={formErrors.description} disabled={busyKey === "create" || blockedKeys.has("create")} onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))} />
                 <Input id="expense-amount" name="amount" label="Monto" inputMode="decimal" value={form.amount} error={formErrors.amount} disabled={busyKey === "create" || blockedKeys.has("create")} onChange={(event) => setForm((previous) => ({ ...previous, amount: event.target.value }))} />

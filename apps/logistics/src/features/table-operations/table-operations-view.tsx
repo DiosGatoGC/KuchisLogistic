@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
+import { SelectField } from "@/components/ui/select-field";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
@@ -800,13 +801,16 @@ export function TableOperationsView() {
           }
         >
           <form id="transfer-session-form" className="table-operation-form" onSubmit={submitSessionTransfer}>
-            <label className="field">
-              <span className="field__label">Punto libre de destino</span>
-              <select className="input" value={destinationId} disabled={isMutating || retryBlocked} onChange={(event) => setDestinationId(event.target.value)}>
-                <option value="">Selecciona un destino</option>
-                {sessionTransferPoints.map((point) => <option key={point.id} value={point.id}>{point.name}</option>)}
-              </select>
-            </label>
+            <SelectField
+              id="session-transfer-destination"
+              label="Punto libre de destino"
+              value={destinationId}
+              placeholder="Selecciona un destino"
+              required
+              disabled={isMutating || retryBlocked}
+              options={sessionTransferPoints.map((point) => ({ value: point.id, label: point.name }))}
+              onChange={setDestinationId}
+            />
             <label className="field">
               <span className="field__label">Motivo opcional</span>
               <textarea className="input table-operation-reason" value={reason} maxLength={500} disabled={isMutating || retryBlocked} onChange={(event) => setReason(event.target.value)} />
@@ -830,15 +834,18 @@ export function TableOperationsView() {
           }
         >
           <form id="transfer-item-form" className="table-operation-form" onSubmit={submitItemTransfer}>
-            <label className="field">
-              <span className="field__label">Atención activa de destino</span>
-              <select className="input" value={destinationId} disabled={isMutating || retryBlocked} onChange={(event) => setDestinationId(event.target.value)}>
-                <option value="">Selecciona una atención</option>
-                {itemTransferPoints.map((point) => (
-                  <option key={point.activeSession?.id} value={point.activeSession?.id}>{point.name}</option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              id="item-transfer-destination"
+              label="Atención activa de destino"
+              value={destinationId}
+              placeholder="Selecciona una atención"
+              required
+              disabled={isMutating || retryBlocked}
+              options={itemTransferPoints.flatMap((point) => point.activeSession
+                ? [{ value: point.activeSession.id, label: point.name }]
+                : [])}
+              onChange={setDestinationId}
+            />
             <label className="field">
               <span className="field__label">Cantidad a transferir</span>
               <input className="input" type="number" min={1} max={selectedItem.quantity} step={1} value={quantity} disabled={isMutating || retryBlocked} onChange={(event) => setQuantity(event.target.value)} />

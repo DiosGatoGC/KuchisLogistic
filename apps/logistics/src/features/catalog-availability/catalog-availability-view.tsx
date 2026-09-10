@@ -6,6 +6,7 @@ import { CompactToolbarControls } from "@/components/layout/compact-toolbar-cont
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
@@ -267,14 +268,14 @@ export function CatalogAvailabilityView() {
       </header>
 
       <CompactToolbarControls>
-        <label className="catalog-availability-select">
-          <span>Categoría</span>
-          <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)}>
-            {categoryOptions.map((category) => (
-              <option key={category.slug} value={category.slug}>{category.name}</option>
-            ))}
-          </select>
-        </label>
+        <SelectField
+          id="catalog-category"
+          className="catalog-availability-select"
+          label="Categoría"
+          value={activeCategory}
+          options={categoryOptions.map((category) => ({ value: category.slug, label: category.name }))}
+          onChange={setActiveCategory}
+        />
       </CompactToolbarControls>
 
       {(notice || errorMessage) && (
