@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -8,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import { formatOperationalDate, formatOperationalMoney, USER_ROLE_LABELS } from "../shifts/shift-formatters";
@@ -62,6 +64,11 @@ export function HistoryListView() {
       if (requestId === requestRef.current) setIsLoading(false);
     }
   }, [getAccessToken, logout]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.shift, LOGISTICS_REALTIME_TOPICS.finance],
+    onInvalidate: () => loadHistory(page),
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadHistory(page), 0);

@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import { executeCloseAttempt } from "./closeout-attempts";
@@ -70,6 +72,14 @@ export function ShiftClosingView() {
       setIsLoading(false);
     }
   }, [getAccessToken, handleUnauthorized, permissions.canReadCurrent]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.shift, LOGISTICS_REALTIME_TOPICS.finance],
+    onInvalidate: () => {
+      if (!isClosing) return loadCurrent();
+    },
+    enabled: permissions.canReadCurrent,
+  });
 
   useEffect(() => {
     if (!permissions.canReadCurrent) return;

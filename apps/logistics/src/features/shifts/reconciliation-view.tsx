@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -10,6 +11,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import { executeReconciliationAttempt } from "./closeout-attempts";
@@ -118,6 +120,14 @@ export function ReconciliationView({ shiftId }: { shiftId: string | null }) {
       setIsLoading(false);
     }
   }, [getAccessToken, handleUnauthorized, permissions.canReadClosure, shiftId]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.shift, LOGISTICS_REALTIME_TOPICS.finance],
+    onInvalidate: () => {
+      if (!isSubmitting) return load();
+    },
+    enabled: resolvable,
+  });
 
   useEffect(() => {
     if (!resolvable) return;

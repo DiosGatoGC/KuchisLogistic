@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +18,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 import { storeOrderCreatedFeedback } from "@/lib/order-created-feedback";
 
@@ -375,6 +377,14 @@ export function OrderingView({ sessionId }: { sessionId: string }) {
     setAdditions(additionResult.products);
     setDraft((current) => revalidateDraft(current, productResult.products, additionResult.products));
   }, [getAccessToken]);
+
+  useLogisticsRealtime({
+    topics: [
+      LOGISTICS_REALTIME_TOPICS.tables,
+      LOGISTICS_REALTIME_TOPICS.catalog,
+    ],
+    onInvalidate: () => loadAll(true),
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadAll(), 0);

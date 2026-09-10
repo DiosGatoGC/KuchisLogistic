@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -10,6 +11,7 @@ import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { Surface } from "@/components/ui/surface";
 import { useProtectedNavigation } from "@/components/layout/protected-navigation-context";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import {
@@ -145,6 +147,13 @@ export function CheckoutView({ sessionId }: { sessionId: string }) {
     setErrorMessage,
     setIsLoading,
   ]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.tables, LOGISTICS_REALTIME_TOPICS.finance],
+    onInvalidate: () => {
+      if (!isPaying && completion === null) return loadPreview();
+    },
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadPreview(), 0);

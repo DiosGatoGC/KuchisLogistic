@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import {
   useCallback,
   useEffect,
@@ -14,6 +15,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import {
@@ -233,6 +235,15 @@ export function PreparationView() {
     },
     [getAccessToken, handleUnauthorized],
   );
+
+  useLogisticsRealtime({
+    topics: [
+      activeStation === "KITCHEN"
+        ? LOGISTICS_REALTIME_TOPICS.kitchen
+        : LOGISTICS_REALTIME_TOPICS.drinks,
+    ],
+    onInvalidate: () => loadQueue(activeStationRef.current, { background: true }),
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(

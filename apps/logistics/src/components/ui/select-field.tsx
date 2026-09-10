@@ -79,18 +79,30 @@ export function SelectField<T extends string>({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
+    const visualViewport = window.visualViewport;
+    const viewportTop = visualViewport?.offsetTop ?? 0;
+    const viewportLeft = visualViewport?.offsetLeft ?? 0;
+    const viewportWidth = visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = visualViewport?.height ?? window.innerHeight;
+    const viewportRight = viewportLeft + viewportWidth;
+    const viewportBottom = viewportTop + viewportHeight;
     const viewportPadding = 8;
     const gap = 6;
     const desiredHeight = Math.min(276, options.length * 44 + 8);
-    const below = window.innerHeight - rect.bottom - viewportPadding - gap;
-    const above = rect.top - viewportPadding - gap;
+    const below = viewportBottom - rect.bottom - viewportPadding - gap;
+    const above = rect.top - viewportTop - viewportPadding - gap;
     const opensUp = below < Math.min(desiredHeight, 132) && above > below;
     const available = Math.max(88, Math.min(276, opensUp ? above : below));
-    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
-    const left = Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - width - viewportPadding));
+    const width = Math.min(rect.width, viewportWidth - viewportPadding * 2);
+    const left = Math.max(
+      viewportLeft + viewportPadding,
+      Math.min(rect.left, viewportRight - width - viewportPadding),
+    );
     const panelHeight = Math.min(desiredHeight, available);
     setPosition({
-      top: opensUp ? Math.max(viewportPadding, rect.top - panelHeight - gap) : rect.bottom + gap,
+      top: opensUp
+        ? Math.max(viewportTop + viewportPadding, rect.top - panelHeight - gap)
+        : rect.bottom + gap,
       left,
       width,
       maxHeight: available,
@@ -120,10 +132,14 @@ export function SelectField<T extends string>({
 
     document.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
     document.addEventListener("scroll", handleViewportChange, true);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
       document.removeEventListener("scroll", handleViewportChange, true);
     };
   }, [close, isOpen, updatePosition]);

@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGISTICS_REALTIME_TOPICS } from "@kuchis/shared/logistics-realtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
+import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
 import { ApiError } from "@/lib/api/client";
 
 import { executeOpenShiftAttempt } from "./shift-opening-attempt";
@@ -66,6 +68,13 @@ export function ShiftOpeningView() {
       if (requestId === requestRef.current) setIsLoading(false);
     }
   }, [getAccessToken, handleUnauthorized]);
+
+  useLogisticsRealtime({
+    topics: [LOGISTICS_REALTIME_TOPICS.shift],
+    onInvalidate: () => {
+      if (!isOpening) return loadCurrent();
+    },
+  });
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadCurrent(), 0);

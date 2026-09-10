@@ -20,9 +20,12 @@
     "test:closeout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/shifts/closeout-model.test.ts",
     "test:history": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/history/history-model.test.ts",
     "test:users": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/users/users-model.test.ts",
-    "test:select": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/components/ui/select-model.test.ts"
+    "test:select": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/components/ui/select-model.test.ts",
+    "test:realtime": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/realtime/logistics-realtime-model.test.ts",
+    "test:pwa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/pwa/pwa-model.test.ts"
   },
   "dependencies": {
+    "@kuchis/shared": "file:../../packages/shared",
     "@supabase/supabase-js": "2.112.3",
     "next": "16.3.2",
     "react": "19.2.8",
