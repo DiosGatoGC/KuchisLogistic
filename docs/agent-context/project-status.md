@@ -23,16 +23,16 @@ Completed and certified:
 7. Actualizar carta — DONE (Production smoke certified)
 8. Turnos/Gastos — DONE (Production smoke certified)
 9. Cierre/cuadre — DONE (Production smoke certified)
+10. Historial — DONE (Production smoke certified)
+11. Usuarios — DONE (Production smoke certified)
 
 Pending:
 
-10. Historial
-11. Usuarios
 12. Realtime hardening
 13. PWA/mobile/tablet
 14. Frontend Production Readiness
 
-Current next objective: **Objective 10 — Historial**. Do not begin it automatically as part of the Objectives 8 and 9 closeout.
+Current next objective: **Objective 12 — Realtime hardening**. Do not begin it automatically as part of the Objectives 10 and 11 closeout.
 
 The shared protected shell now provides a human-smoke-verified in-app Back control for installed/fullscreen PWA use: it is hidden on `/home`, uses marked same-app history when available, falls back safely to `/home` on direct entry, and remains suppressed on the terminal paid Checkout screen.
 

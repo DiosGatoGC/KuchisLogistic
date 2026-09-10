@@ -1,10 +1,10 @@
 import { CapabilityGuard } from "@/features/auth/auth-guards";
-import { UpcomingModule } from "@/features/modules/upcoming-module";
+import { HistoryListView } from "@/features/history/history-list-view";
 
 export default function HistoryPage() {
   return (
     <CapabilityGuard anyOf={["history.view"]}>
-      <UpcomingModule title="Historial" description="La consulta del historial estará disponible próximamente." icon="history" />
+      <HistoryListView />
     </CapabilityGuard>
   );
 }
