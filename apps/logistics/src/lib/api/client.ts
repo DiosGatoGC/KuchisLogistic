@@ -1,14 +1,12 @@
-export type ApiErrorKind =
-  | "bad-request"
-  | "unauthorized"
-  | "forbidden"
-  | "not-found"
-  | "conflict"
-  | "rate-limited"
-  | "server"
-  | "network"
-  | "configuration"
-  | "unexpected";
+import { ApiError, type ApiErrorKind } from "./api-error";
+import {
+  apiRequestUrl,
+  PUBLIC_FRONTEND_CONFIG,
+  publicConfigurationErrorMessage,
+} from "../config/public-config";
+
+export { ApiError, isSessionInvalidError } from "./api-error";
+export type { ApiErrorKind } from "./api-error";
 
 interface ApiErrorBody {
   error?: {
@@ -24,14 +22,13 @@ interface ApiRequestOptions extends Omit<RequestInit, "body"> {
 }
 
 function apiBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_LOGISTICS_API_URL?.trim();
-  if (!configured) {
+  if (!PUBLIC_FRONTEND_CONFIG.ok) {
     throw new ApiError(
       "configuration",
-      "Falta configurar la conexión con Logistics.",
+      publicConfigurationErrorMessage(PUBLIC_FRONTEND_CONFIG),
     );
   }
-  return configured.replace(/\/$/, "");
+  return PUBLIC_FRONTEND_CONFIG.value.logisticsApiUrl;
 }
 
 function kindForStatus(status: number): ApiErrorKind {
@@ -55,18 +52,6 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
-export class ApiError extends Error {
-  constructor(
-    public readonly kind: ApiErrorKind,
-    message: string,
-    public readonly status?: number,
-    public readonly code?: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
 export async function apiRequest<T>(
   path: string,
   { accessToken, body, expectedStatus, headers, ...init }: ApiRequestOptions = {},
@@ -74,8 +59,9 @@ export async function apiRequest<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${apiBaseUrl()}${path}`, {
+    response = await fetch(apiRequestUrl(apiBaseUrl(), path), {
       ...init,
+      cache: "no-store",
       body: body === undefined ? undefined : JSON.stringify(body),
       headers: {
         Accept: "application/json",
@@ -108,6 +94,14 @@ export async function apiRequest<T>(
     throw new ApiError(
       "unexpected",
       "Logistics respondió con un resultado inesperado.",
+      response.status,
+    );
+  }
+
+  if (payload === null) {
+    throw new ApiError(
+      "unexpected",
+      "Logistics respondió con un formato inesperado.",
       response.status,
     );
   }

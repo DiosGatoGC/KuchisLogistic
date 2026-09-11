@@ -1,26 +1,28 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { PUBLIC_FRONTEND_CONFIG } from "@/lib/config/public-config";
+
 let browserClient: SupabaseClient | null | undefined;
 
 export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (browserClient !== undefined) return browserClient;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
-
-  if (!url || !publishableKey) {
+  if (!PUBLIC_FRONTEND_CONFIG.ok) {
     browserClient = null;
     return browserClient;
   }
 
-  browserClient = createClient(url, publishableKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
+  browserClient = createClient(
+    PUBLIC_FRONTEND_CONFIG.value.supabaseUrl,
+    PUBLIC_FRONTEND_CONFIG.value.supabasePublishableKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
     },
-  });
+  );
 
   return browserClient;
 }

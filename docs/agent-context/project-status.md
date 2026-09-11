@@ -27,12 +27,9 @@ Completed and certified:
 11. Usuarios — DONE (Production smoke certified)
 12. Realtime hardening — DONE / PASS CERTIFICADO
 13. PWA/mobile/tablet — DONE / PASS CERTIFICADO
+14. Frontend Production Readiness — DONE / PASS CERTIFICADO
 
-Pending:
-
-14. Frontend Production Readiness
-
-Current next objective: **Objective 14 — Frontend Production Readiness**. Do not begin it automatically.
+**Frontend Logistics roadmap complete — Objectives 1–14 DONE / PASS CERTIFICADO.**
 
 The shared protected shell now provides a human-smoke-verified in-app Back control for installed/fullscreen PWA use: it is hidden on `/home`, uses marked same-app history when available, falls back safely to `/home` on direct entry, and remains suppressed on the terminal paid Checkout screen.
 

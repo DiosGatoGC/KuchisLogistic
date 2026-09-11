@@ -12,7 +12,7 @@ import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 
 import { executeReconciliationAttempt } from "./closeout-attempts";
 import {
@@ -77,7 +77,7 @@ export function ReconciliationView({ shiftId }: { shiftId: string | null }) {
   const lockRef = useRef({ current: false });
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

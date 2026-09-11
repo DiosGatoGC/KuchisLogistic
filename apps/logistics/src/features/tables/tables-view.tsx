@@ -19,7 +19,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, isSessionInvalidError } from "@/lib/api/client";
 import {
   consumeOrderCreatedFeedback,
   orderCreatedMessage,
@@ -231,7 +231,7 @@ export function TablesView() {
 
   const handleUnauthorized = useCallback(
     async (error: unknown) => {
-      if (error instanceof ApiError && error.kind === "unauthorized") {
+      if (isSessionInvalidError(error)) {
         await logout();
         return true;
       }

@@ -12,7 +12,7 @@ import { Surface } from "@/components/ui/surface";
 import { useProtectedNavigation } from "@/components/layout/protected-navigation-context";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 
 import {
   awaitCheckoutPayment,
@@ -111,7 +111,7 @@ export function CheckoutView({ sessionId }: { sessionId: string }) {
   const paymentLockRef = useRef({ current: false });
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

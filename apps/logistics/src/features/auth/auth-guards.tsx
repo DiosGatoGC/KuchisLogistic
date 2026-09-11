@@ -11,11 +11,22 @@ import { useAuth } from "./auth-context";
 
 export function AuthenticatedGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { status } = useAuth();
+  const { retryAuthentication, status } = useAuth();
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
   }, [router, status]);
+
+  if (status === "unavailable") {
+    return (
+      <ErrorState
+        title="No pudimos validar tu sesión"
+        message="Revisa tu conexión y vuelve a intentarlo. Tu sesión local no fue descartada."
+        actionLabel="Reintentar"
+        onAction={retryAuthentication}
+      />
+    );
+  }
 
   if (status !== "authenticated") {
     return <LoadingState label="Restaurando tu sesión…" fullScreen />;
@@ -26,11 +37,22 @@ export function AuthenticatedGuard({ children }: { children: React.ReactNode }) 
 
 export function PublicOnlyGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { status } = useAuth();
+  const { retryAuthentication, status } = useAuth();
 
   useEffect(() => {
     if (status === "authenticated") router.replace("/home");
   }, [router, status]);
+
+  if (status === "unavailable") {
+    return (
+      <ErrorState
+        title="No pudimos validar tu sesión"
+        message="Revisa tu conexión y vuelve a intentarlo antes de iniciar una nueva sesión."
+        actionLabel="Reintentar"
+        onAction={retryAuthentication}
+      />
+    );
+  }
 
   if (status === "restoring" || status === "authenticated") {
     return <LoadingState label="Comprobando tu sesión…" fullScreen />;

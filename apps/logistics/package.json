@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test": "npm run test:tables && npm run test:ordering && npm run test:preparation && npm run test:table-operations && npm run test:checkout && npm run test:catalog-availability && npm run test:navigation && npm run test:shifts && npm run test:expenses && npm run test:closeout && npm run test:history && npm run test:users && npm run test:select && npm run test:realtime && npm run test:pwa && npm run test:readiness",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
@@ -22,12 +23,13 @@
     "test:users": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/users/users-model.test.ts",
     "test:select": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/components/ui/select-model.test.ts",
     "test:realtime": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/realtime/logistics-realtime-model.test.ts",
-    "test:pwa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/pwa/pwa-model.test.ts"
+    "test:pwa": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/features/pwa/pwa-model.test.ts",
+    "test:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/lib/readiness/readiness-model.test.ts"
   },
   "dependencies": {
     "@kuchis/shared": "file:../../packages/shared",
     "@supabase/supabase-js": "2.112.3",
-    "next": "16.3.2",
+    "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -37,7 +39,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.2",
+    "eslint-config-next": "16.3.4",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
   }
