@@ -29,7 +29,7 @@ import {
 } from "@/features/tables/tables-model";
 import { getServicePointStatus } from "@/features/tables/tables-api";
 import type { ServicePointStatus } from "@/features/tables/tables-types";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 import { can } from "@/lib/permissions/capabilities";
 
 import {
@@ -280,7 +280,7 @@ export function TableOperationsView() {
   const locksRef = useRef(new Set<string>());
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

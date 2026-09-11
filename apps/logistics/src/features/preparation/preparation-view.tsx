@@ -16,7 +16,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 
 import {
   deliverOrderItem,
@@ -178,7 +178,7 @@ export function PreparationView() {
 
   const handleUnauthorized = useCallback(
     async (error: unknown) => {
-      if (error instanceof ApiError && error.kind === "unauthorized") {
+      if (isSessionInvalidError(error)) {
         await logout();
         return true;
       }

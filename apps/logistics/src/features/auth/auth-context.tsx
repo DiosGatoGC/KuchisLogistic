@@ -10,7 +10,11 @@ import {
   useState,
 } from "react";
 
-import { ApiError, apiRequest } from "@/lib/api/client";
+import { ApiError, apiRequest, isSessionInvalidError } from "@/lib/api/client";
+import {
+  PUBLIC_FRONTEND_CONFIG,
+  publicConfigurationErrorMessage,
+} from "@/lib/config/public-config";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type {
   AuthenticatedUser,
@@ -18,7 +22,11 @@ import type {
   MeResult,
 } from "@/types/auth";
 
-type AuthStatus = "restoring" | "authenticated" | "unauthenticated";
+type AuthStatus =
+  | "restoring"
+  | "authenticated"
+  | "unauthenticated"
+  | "unavailable";
 
 interface LoginInput {
   username: string;
@@ -32,15 +40,14 @@ interface AuthContextValue {
   getAccessToken: () => Promise<string>;
   login: (input: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
+  retryAuthentication: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const hasSupabaseConfiguration = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim(),
-);
-const missingSupabaseMessage =
-  "Falta configurar Supabase para iniciar y restaurar sesiones.";
+const hasPublicConfiguration = PUBLIC_FRONTEND_CONFIG.ok;
+const publicConfigurationError = PUBLIC_FRONTEND_CONFIG.ok
+  ? null
+  : publicConfigurationErrorMessage(PUBLIC_FRONTEND_CONFIG);
 
 async function loadCurrentUser(accessToken: string) {
   return apiRequest<MeResult>("/api/logistics/auth/me", { accessToken });
@@ -48,12 +55,13 @@ async function loadCurrentUser(accessToken: string) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>(
-    hasSupabaseConfiguration ? "restoring" : "unauthenticated",
+    hasPublicConfiguration ? "restoring" : "unauthenticated",
   );
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [configurationError, setConfigurationError] = useState<string | null>(
-    hasSupabaseConfiguration ? null : missingSupabaseMessage,
+    publicConfigurationError,
   );
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
 
   const clearAuth = useCallback(() => {
     setUser(null);
@@ -73,14 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus("authenticated");
         setConfigurationError(null);
       } catch (error) {
-        const client = getSupabaseBrowserClient();
-        if (
-          error instanceof ApiError &&
-          (error.kind === "unauthorized" || error.kind === "forbidden")
-        ) {
+        if (isSessionInvalidError(error)) {
+          const client = getSupabaseBrowserClient();
           await client?.auth.signOut();
+          clearAuth();
+          return;
         }
-        clearAuth();
+        setUser(null);
+        setStatus("unavailable");
       }
     },
     [clearAuth],
@@ -100,8 +108,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
 
       if (error) {
-        await client.auth.signOut();
-        if (active) clearAuth();
+        if (active) {
+          setUser(null);
+          setStatus("unavailable");
+        }
         return;
       }
 
@@ -125,14 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       active = false;
       data.subscription.unsubscribe();
     };
-  }, [clearAuth, reconcileSession]);
+  }, [clearAuth, reconcileSession, restoreAttempt]);
+
+  const retryAuthentication = useCallback(() => {
+    setStatus("restoring");
+    setRestoreAttempt((attempt) => attempt + 1);
+  }, []);
 
   const login = useCallback(async ({ username, password }: LoginInput) => {
     const client = getSupabaseBrowserClient();
     if (!client) {
       throw new ApiError(
         "configuration",
-        "Falta configurar Supabase para iniciar sesión.",
+        publicConfigurationError ??
+          "Falta configurar la conexión para iniciar sesión.",
       );
     }
 
@@ -173,7 +189,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!client) {
       throw new ApiError(
         "configuration",
-        "Falta configurar Supabase para consultar Logistics.",
+        publicConfigurationError ??
+          "Falta configurar la conexión para consultar Logistics.",
       );
     }
 
@@ -201,8 +218,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuth]);
 
   const value = useMemo(
-    () => ({ status, user, configurationError, getAccessToken, login, logout }),
-    [configurationError, getAccessToken, login, logout, status, user],
+    () => ({
+      status,
+      user,
+      configurationError,
+      getAccessToken,
+      login,
+      logout,
+      retryAuthentication,
+    }),
+    [
+      configurationError,
+      getAccessToken,
+      login,
+      logout,
+      retryAuthentication,
+      status,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

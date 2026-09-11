@@ -13,7 +13,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, isSessionInvalidError } from "@/lib/api/client";
 
 import { executeExpenseMutation } from "./expense-mutations";
 import { getCurrentExpenses, recordExpense, voidExpense } from "./expenses-api";
@@ -57,7 +57,7 @@ export function ExpensesView() {
   const locksRef = useRef(new Set<string>());
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

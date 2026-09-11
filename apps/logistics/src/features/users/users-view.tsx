@@ -10,7 +10,7 @@ import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { SelectField } from "@/components/ui/select-field";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, isSessionInvalidError } from "@/lib/api/client";
 
 import { formatOperationalDate } from "../shifts/shift-formatters";
 import {
@@ -76,7 +76,7 @@ export function UsersView() {
   const locksRef = useRef(new Set<string>());
 
   const handleAuthError = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && (error.kind === "unauthorized" || error.code === "ACCOUNT_INACTIVE")) {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

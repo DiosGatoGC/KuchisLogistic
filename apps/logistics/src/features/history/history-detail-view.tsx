@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 
 import { formatOperationalDate, formatOperationalMoney, USER_ROLE_LABELS } from "../shifts/shift-formatters";
 import { getShiftHistoryDetail } from "./history-api";
@@ -84,7 +84,7 @@ export function HistoryDetailView({ shiftId }: { shiftId: string }) {
       const response = await getShiftHistoryDetail(shiftId, accessToken);
       setHistory(normalizeHistoryDetail(response.history));
     } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.kind === "unauthorized") {
+      if (isSessionInvalidError(requestError)) {
         await logout();
         return;
       }

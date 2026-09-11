@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, isSessionInvalidError } from "@/lib/api/client";
 
 import { formatOperationalDate, formatOperationalMoney, USER_ROLE_LABELS } from "../shifts/shift-formatters";
 import { getShiftHistoryList } from "./history-api";
@@ -53,7 +53,7 @@ export function HistoryListView() {
       setResult(response);
     } catch (error) {
       if (requestId !== requestRef.current) return;
-      if (error instanceof ApiError && error.kind === "unauthorized") {
+      if (isSessionInvalidError(error)) {
         await logout();
         return;
       }

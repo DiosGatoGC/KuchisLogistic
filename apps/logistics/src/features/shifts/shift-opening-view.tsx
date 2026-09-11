@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { Surface } from "@/components/ui/surface";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, isSessionInvalidError } from "@/lib/api/client";
 
 import { executeOpenShiftAttempt } from "./shift-opening-attempt";
 import { formatOperationalDate, formatOperationalMoney, USER_ROLE_LABELS } from "./shift-formatters";
@@ -40,7 +40,7 @@ export function ShiftOpeningView() {
   const openingLockRef = useRef({ current: false });
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

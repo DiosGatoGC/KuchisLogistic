@@ -7,7 +7,6 @@ export const LOGISTICS_PWA_MANIFEST = {
   start_url: "/home",
   scope: "/",
   display: "standalone",
-  orientation: "landscape",
   background_color: "#faf7f1",
   theme_color: "#f66b0e",
   icons: [

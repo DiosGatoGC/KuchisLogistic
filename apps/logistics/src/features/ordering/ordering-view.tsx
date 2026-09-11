@@ -19,7 +19,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { OperationalDialog } from "@/components/ui/operational-dialog";
 import { useAuth } from "@/features/auth/auth-context";
 import { useLogisticsRealtime } from "@/features/realtime/use-logistics-realtime";
-import { ApiError } from "@/lib/api/client";
+import { isSessionInvalidError } from "@/lib/api/client";
 import { storeOrderCreatedFeedback } from "@/lib/order-created-feedback";
 
 import {
@@ -302,7 +302,7 @@ export function OrderingView({ sessionId }: { sessionId: string }) {
   const submitLockRef = useRef(false);
 
   const handleUnauthorized = useCallback(async (error: unknown) => {
-    if (error instanceof ApiError && error.kind === "unauthorized") {
+    if (isSessionInvalidError(error)) {
       await logout();
       return true;
     }

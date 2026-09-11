@@ -13,6 +13,7 @@ out/
 # Build
 dist/
 build/
+*.tsbuildinfo
 
 # Logs
 *.log
@@ -28,3 +29,6 @@ Thumbs.db
 
 # Supabase local
 supabase/.temp/
+
+# Vercel local
+.vercel/

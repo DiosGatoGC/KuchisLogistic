@@ -8,7 +8,11 @@ self.addEventListener("activate", () => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method === "GET") {
-    event.respondWith(fetch(event.request));
-  }
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isApplicationRoute = !requestUrl.pathname.startsWith("/api/");
+
+  if (event.request.method !== "GET" || !isSameOrigin || !isApplicationRoute) return;
+
+  event.respondWith(fetch(event.request));
 });

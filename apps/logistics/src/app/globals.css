@@ -538,10 +538,16 @@ svg {
 .login-page {
   position: relative;
   display: grid;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   place-items: center;
+  scroll-padding-block:
+    max(16px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-bottom));
   padding:
     max(46px, env(safe-area-inset-top))
     max(28px, env(safe-area-inset-right))
@@ -2537,7 +2543,7 @@ svg {
 
   .login-page {
     align-items: start;
-    overflow: auto;
+    overflow-y: auto;
     padding:
       max(24px, env(safe-area-inset-top))
       max(16px, env(safe-area-inset-right))
@@ -2619,6 +2625,124 @@ svg {
 }
 
 @media (orientation: landscape) and (pointer: coarse) and (max-height: 520px) {
+  .login-page {
+    position: fixed;
+    inset: 0;
+    align-items: start;
+    justify-items: center;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+    scroll-padding-block:
+      max(8px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-bottom));
+  }
+
+  .login-layout {
+    width: min(100%, 720px);
+    grid-template-columns: minmax(112px, 0.35fr) minmax(280px, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .login-welcome {
+    padding-top: 4px;
+    text-align: left;
+  }
+
+  .login-welcome .brand {
+    min-height: 44px;
+    margin-bottom: 12px;
+  }
+
+  .login-welcome .brand__mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px 13px 13px 5px;
+    font-size: 1.3rem;
+  }
+
+  .login-welcome .brand__copy small {
+    margin-top: 3px;
+  }
+
+  .login-welcome > .eyebrow {
+    font-size: 0.58rem;
+  }
+
+  .login-welcome h1 {
+    margin: 7px 0 0;
+    font-size: clamp(1.65rem, 4vw, 2.2rem);
+    line-height: 1;
+  }
+
+  .login-welcome > p:not(.eyebrow),
+  .login-welcome__note {
+    display: none;
+  }
+
+  .login-card {
+    border-radius: 18px;
+    padding: 12px 14px;
+  }
+
+  .login-card__heading {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .login-card__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .login-card__icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .login-card h2 {
+    margin-top: 2px;
+    font-size: 1.25rem;
+  }
+
+  .login-form {
+    gap: 8px;
+  }
+
+  .login-form .field {
+    gap: 3px;
+  }
+
+  .login-form .field__label {
+    font-size: 0.68rem;
+  }
+
+  .login-form .input {
+    min-height: 44px;
+    padding-block: 8px;
+    scroll-margin-block: 12px;
+  }
+
+  .login-form .password-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .login-error {
+    gap: 7px;
+    padding: 7px 9px;
+  }
+
+  .login-submit {
+    min-height: 44px;
+    margin-top: 0;
+    scroll-margin-block: 12px;
+  }
+
   :root {
     --header-height: var(--compact-header-height);
   }
